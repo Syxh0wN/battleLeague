@@ -903,19 +903,6 @@ nextjs-portal {
   padding: 10px 12px;
 }
 
-.BattleSelectionSummary {
-  display: grid;
-  gap: 4px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 90%, transparent);
-  background: color-mix(in srgb, black 18%, var(--SurfaceDark));
-  padding: 10px 12px;
-}
-
-.BattleSelectionSummary small {
-  color: var(--TextSecondary);
-}
-
 .BattleAiWrap {
   display: grid;
   gap: 10px;

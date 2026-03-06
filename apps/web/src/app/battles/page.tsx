@@ -208,12 +208,6 @@ export default function BattlesPage() {
         </div>
 
         <form onSubmit={HandleCreateBattle} className="BattleFormGrid">
-          <div className="BattleSelectionSummary">
-            <small>Oponente selecionado: {opponentUserId || "Nenhum"}</small>
-            <small>Seu Pokemon selecionado: {challengerPokemonId || "Nenhum"}</small>
-            <small>Pokemon oponente selecionado: {opponentPokemonId || "Nenhum"}</small>
-          </div>
-
           <div className="BattlePickerSection">
             <span className="BattlePickerTitle">Escolha seu Pokemon</span>
             <div className="BattlePickerGrid">
