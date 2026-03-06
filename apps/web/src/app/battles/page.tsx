@@ -281,6 +281,9 @@ export default function BattlesPage() {
           <article className="BattleCreatedCard">
             <strong>Batalha PvP criada com sucesso</strong>
             <small>ID: {createdPvpBattleId}</small>
+            <Link className="BattleOpenLink" href={`/battles/${createdPvpBattleId}`}>
+              Abrir batalha
+            </Link>
           </article>
         ) : null}
 
@@ -321,6 +324,9 @@ export default function BattlesPage() {
           <article className="BattleCreatedCard">
             <strong>Batalha IA criada com sucesso</strong>
             <small>ID: {createdAiBattleId}</small>
+            <Link className="BattleOpenLink" href={`/battles/${createdAiBattleId}`}>
+              Abrir batalha
+            </Link>
           </article>
         ) : null}
       </section>

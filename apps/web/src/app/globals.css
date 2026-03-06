@@ -774,6 +774,16 @@ nextjs-portal {
   color: color-mix(in srgb, var(--TextPrimary) 88%, var(--Success));
 }
 
+.BattleOpenLink {
+  width: fit-content;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--Success) 35%, transparent);
+  background: color-mix(in srgb, var(--Success) 16%, transparent);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .BattleErrorBox {
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--Danger) 45%, transparent);
@@ -937,4 +947,124 @@ nextjs-portal {
 .BattleAiCardActive {
   border-color: color-mix(in srgb, var(--PrimaryYellow) 70%, transparent);
   background: color-mix(in srgb, var(--PrimaryYellow) 12%, var(--SurfaceDark));
+}
+
+.BattleDetailRoot {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.BattleDetailHero {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 35%, var(--SurfaceLight));
+  background: color-mix(in srgb, var(--SurfaceDark) 92%, black);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.BattleDetailTag {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--PrimaryYellow) 40%, transparent);
+  background: color-mix(in srgb, var(--PrimaryYellow) 17%, transparent);
+}
+
+.BattleDetailHero h1 {
+  margin: 8px 0 4px;
+  font-size: 28px;
+}
+
+.BattleDetailHero p {
+  margin: 0;
+  color: var(--TextSecondary);
+}
+
+.BattleDetailSection {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 85%, transparent);
+  background: color-mix(in srgb, var(--SurfaceDark) 90%, black);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.BattleDetailHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.BattleDetailHeaderRow h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.BattleDetailHeaderRow small {
+  color: var(--TextSecondary);
+}
+
+.BattleVersusGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.BattleFighterCard {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryPurple) 30%, transparent);
+  background: color-mix(in srgb, var(--SecondaryPurple) 10%, var(--SurfaceDark));
+  padding: 10px;
+  display: grid;
+  gap: 3px;
+}
+
+.BattleFighterCard small {
+  color: var(--TextSecondary);
+}
+
+.BattleWinnerBox {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--Success) 40%, transparent);
+  background: color-mix(in srgb, var(--Success) 12%, transparent);
+  padding: 10px;
+}
+
+.BattleActionGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  max-width: 520px;
+}
+
+.BattleActionButton {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(145deg, var(--SecondaryPurple), var(--PrimaryBlue));
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.BattleTurnsList {
+  display: grid;
+  gap: 8px;
+}
+
+.BattleTurnCard {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 92%, transparent);
+  background: color-mix(in srgb, black 18%, var(--SurfaceDark));
+  padding: 10px;
+  display: grid;
+  gap: 3px;
+}
+
+.BattleTurnCard small {
+  color: var(--TextSecondary);
 }
