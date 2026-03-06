@@ -158,3 +158,196 @@ nextjs-portal {
   left: 0;
   top: 6px;
 }
+
+.DashboardRoot {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.DashboardHero {
+  display: grid;
+  gap: 16px;
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 35%, var(--SurfaceLight));
+  background:
+    radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--SecondaryPurple) 28%, transparent), transparent 48%),
+    linear-gradient(145deg, color-mix(in srgb, var(--SurfaceDark) 95%, black), color-mix(in srgb, var(--SurfaceLight) 82%, black));
+}
+
+.DashboardHeroTitle {
+  display: grid;
+  gap: 8px;
+}
+
+.DashboardHeroTitle h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.05;
+}
+
+.DashboardHeroTitle p {
+  margin: 0;
+  color: var(--TextSecondary);
+  max-width: 640px;
+}
+
+.DashboardHeroTag {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--PrimaryYellow) 42%, transparent);
+  background: color-mix(in srgb, var(--PrimaryYellow) 20%, transparent);
+  color: color-mix(in srgb, var(--PrimaryYellow) 88%, white);
+}
+
+.DashboardStatsGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.DashboardStatCard {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 25%, var(--SurfaceLight));
+  padding: 11px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: color-mix(in srgb, var(--SurfaceDark) 85%, black);
+}
+
+.DashboardStatCard small {
+  display: block;
+  color: var(--TextSecondary);
+  font-size: 12px;
+}
+
+.DashboardStatCard strong {
+  font-size: 20px;
+}
+
+.DashboardIconTile {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(145deg, var(--SecondaryPurple), var(--PrimaryBlue));
+}
+
+.DashboardSection {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 80%, transparent);
+  background: color-mix(in srgb, var(--SurfaceDark) 90%, black);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.DashboardSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.DashboardSectionHeader h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.DashboardSectionHeader small {
+  color: var(--TextSecondary);
+}
+
+.DashboardNavGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.DashboardNavCard {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 30%, transparent);
+  background: color-mix(in srgb, var(--PrimaryBlue) 12%, transparent);
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  transition: transform 0.15s ease;
+}
+
+.DashboardNavCard:hover {
+  transform: translateY(-2px);
+}
+
+.DashboardNavCard span {
+  color: var(--TextSecondary);
+  font-size: 13px;
+}
+
+.DashboardEmptyState {
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--SurfaceLight) 95%, transparent);
+  padding: 16px;
+  color: var(--TextSecondary);
+}
+
+.ChampionGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.ChampionCard {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryTeal) 30%, transparent);
+  background: color-mix(in srgb, var(--SecondaryTeal) 8%, var(--SurfaceDark));
+  padding: 11px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ChampionImageWrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 90%, transparent);
+  background: color-mix(in srgb, black 35%, transparent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ChampionImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.ChampionImageFallback {
+  color: var(--TextSecondary);
+  font-weight: 700;
+}
+
+.ChampionMeta {
+  display: grid;
+  gap: 3px;
+}
+
+.ChampionMeta strong {
+  text-transform: capitalize;
+}
+
+.ChampionMeta small {
+  color: var(--TextSecondary);
+}
