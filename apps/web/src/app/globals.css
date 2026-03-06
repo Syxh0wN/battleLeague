@@ -602,3 +602,155 @@ nextjs-portal {
   font-weight: 700;
   cursor: pointer;
 }
+
+.BattlesRoot {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.BattlesHero {
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryPurple) 35%, var(--SurfaceLight));
+  background:
+    radial-gradient(circle at 90% 12%, color-mix(in srgb, var(--SecondaryPurple) 28%, transparent), transparent 45%),
+    linear-gradient(150deg, color-mix(in srgb, var(--SurfaceDark) 95%, black), color-mix(in srgb, var(--SurfaceLight) 84%, black));
+  display: grid;
+  gap: 12px;
+}
+
+.BattlesHeroTop {
+  display: grid;
+  gap: 8px;
+}
+
+.BattlesHeroTag {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--PrimaryYellow) 42%, transparent);
+  background: color-mix(in srgb, var(--PrimaryYellow) 19%, transparent);
+  color: color-mix(in srgb, var(--PrimaryYellow) 88%, white);
+}
+
+.BattlesHeroTop h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.BattlesHeroTop p {
+  margin: 0;
+  color: var(--TextSecondary);
+  max-width: 760px;
+}
+
+.BattlesHeroPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.BattlesHeroPills span {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryPurple) 35%, transparent);
+  background: color-mix(in srgb, var(--SecondaryPurple) 12%, transparent);
+  color: color-mix(in srgb, var(--TextPrimary) 95%, var(--SecondaryPurple));
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+
+.BattlesSection {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 80%, transparent);
+  background: color-mix(in srgb, var(--SurfaceDark) 90%, black);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.BattlesSectionHeader {
+  display: grid;
+  gap: 4px;
+}
+
+.BattlesSectionHeader h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.BattlesSectionHeader small {
+  color: var(--TextSecondary);
+}
+
+.BattleFormGrid {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+}
+
+.BattleFormField {
+  display: grid;
+  gap: 6px;
+}
+
+.BattleFormField span {
+  font-size: 12px;
+  color: var(--TextSecondary);
+  font-weight: 600;
+}
+
+.BattleFormField input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 95%, transparent);
+  background: color-mix(in srgb, black 20%, var(--SurfaceDark));
+  color: var(--TextPrimary);
+  padding: 10px 12px;
+  outline: none;
+}
+
+.BattleFormField input:focus {
+  border-color: color-mix(in srgb, var(--SecondaryPurple) 70%, transparent);
+}
+
+.BattleCreateButton {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: linear-gradient(145deg, var(--SecondaryPurple), var(--PrimaryBlue));
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.BattleCreateButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.BattleCreatedCard {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--Success) 40%, transparent);
+  background: color-mix(in srgb, var(--Success) 12%, transparent);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  max-width: 560px;
+}
+
+.BattleCreatedCard small {
+  color: color-mix(in srgb, var(--TextPrimary) 88%, var(--Success));
+}
+
+.BattleErrorBox {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--Danger) 45%, transparent);
+  background: color-mix(in srgb, var(--Danger) 12%, transparent);
+  color: color-mix(in srgb, var(--TextPrimary) 92%, var(--Danger));
+  padding: 12px;
+  max-width: 560px;
+}
