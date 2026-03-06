@@ -7,8 +7,15 @@ import { ApiFetch } from "../../lib/api";
 type UserPokemon = {
   id: string;
   level: number;
+  xp: number;
+  currentHp: number;
+  atk: number;
+  def: number;
+  speed: number;
   wins: number;
   losses: number;
+  restCooldownUntil: string | null;
+  evolveCooldownUntil: string | null;
   species: {
     name: string;
     typePrimary: string;
@@ -47,6 +54,25 @@ export default function PokemonPage() {
 
   const myPokemons = myPokemonsQuery.data ?? [];
   const starters = (speciesQuery.data ?? []).slice(0, 3);
+
+  const formatCooldown = (value: string | null) => {
+    if (!value) {
+      return "Pronto";
+    }
+    const target = new Date(value);
+    if (Number.isNaN(target.getTime())) {
+      return "Pronto";
+    }
+    if (target.getTime() <= Date.now()) {
+      return "Pronto";
+    }
+    return target.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
 
   return (
     <main className="PokemonRoot">
@@ -93,11 +119,24 @@ export default function PokemonPage() {
                 </div>
                 <div className="PokemonCardMeta">
                   <strong>{pokemon.species.name}</strong>
-                  <small>Tipo: {pokemon.species.typePrimary}</small>
-                  <small>Level: {pokemon.level}</small>
+                  <div className="PokemonMetaTopLine">
+                    <small>Tipo: {pokemon.species.typePrimary}</small>
+                    <small>Level: {pokemon.level}</small>
+                  </div>
+                  <div className="PokemonStatsGrid">
+                    <span>HP {pokemon.currentHp}</span>
+                    <span>ATK {pokemon.atk}</span>
+                    <span>DEF {pokemon.def}</span>
+                    <span>SPD {pokemon.speed}</span>
+                    <span>XP {pokemon.xp}</span>
+                  </div>
                   <small>
                     W/L: {pokemon.wins}/{pokemon.losses}
                   </small>
+                  <div className="PokemonCooldowns">
+                    <small>Descanso: {formatCooldown(pokemon.restCooldownUntil)}</small>
+                    <small>Evolucao: {formatCooldown(pokemon.evolveCooldownUntil)}</small>
+                  </div>
                 </div>
               </article>
             ))}

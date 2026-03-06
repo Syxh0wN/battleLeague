@@ -462,10 +462,10 @@ nextjs-portal {
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--SecondaryPurple) 28%, transparent);
   background: color-mix(in srgb, var(--SecondaryPurple) 10%, var(--SurfaceDark));
-  padding: 11px;
+  padding: 12px;
   display: flex;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .PokemonCardImageWrap {
@@ -494,7 +494,8 @@ nextjs-portal {
 
 .PokemonCardMeta {
   display: grid;
-  gap: 3px;
+  gap: 6px;
+  width: 100%;
 }
 
 .PokemonCardMeta strong {
@@ -503,6 +504,33 @@ nextjs-portal {
 
 .PokemonCardMeta small {
   color: var(--TextSecondary);
+}
+
+.PokemonMetaTopLine {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.PokemonStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+  gap: 6px;
+}
+
+.PokemonStatsGrid span {
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 92%, transparent);
+  background: color-mix(in srgb, black 18%, var(--SurfaceDark));
+  padding: 6px 8px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--TextPrimary) 95%, var(--PrimaryBlue));
+  font-weight: 600;
+}
+
+.PokemonCooldowns {
+  display: grid;
+  gap: 2px;
 }
 
 .PokemonEmptyState {
