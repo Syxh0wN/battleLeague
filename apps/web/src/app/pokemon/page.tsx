@@ -50,8 +50,16 @@ export default function PokemonPage() {
   return (
     <main className="PokemonRoot">
       <section className="PokemonHero">
-        <h1>Centro Pokemon</h1>
-        <p>Gerencie seu time, escolha seu starter e acompanhe a evolucao de cada campeao.</p>
+        <div className="PokemonHeroTop">
+          <span className="PokemonHeroTag">BaseDoTreinador</span>
+          <h1>Centro Pokemon</h1>
+          <p>Aqui voce monta seu elenco, define seu starter e prepara os campeoes para a proxima batalha.</p>
+        </div>
+        <div className="PokemonHeroPills">
+          <span>Evolucao por level</span>
+          <span>Cooldown de descanso</span>
+          <span>Historico de performance</span>
+        </div>
       </section>
 
       {myPokemons.length > 0 ? (
@@ -85,8 +93,11 @@ export default function PokemonPage() {
       ) : (
         <section className="PokemonSection">
           <div className="PokemonEmptyState">
-            <strong>Voce ainda nao tem pokemon</strong>
-            <p>Escolha seu starter para comecar as batalhas.</p>
+            <div className="PokemonEmptyIcon">PK</div>
+            <div className="PokemonEmptyContent">
+              <strong>Seu time ainda esta vazio</strong>
+              <p>Escolha um starter agora para liberar duelos, ganhar XP e iniciar sua jornada no ranking.</p>
+            </div>
           </div>
 
           <div className="StarterGrid">
