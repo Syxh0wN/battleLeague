@@ -58,30 +58,7 @@ export class AuthService {
       }
     });
 
-    const accessToken = this.jwtService.sign(
-      { email: user.email },
-      {
-        subject: user.id,
-        secret: process.env.JWT_ACCESS_SECRET,
-        expiresIn: "15m"
-      }
-    );
-
-    const refreshToken = this.jwtService.sign(
-      { email: user.email, type: "refresh" },
-      {
-        subject: user.id,
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: "30d"
-      }
-    );
-
-    const refreshTokenHash = await argon2.hash(refreshToken);
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: refreshTokenHash }
-    });
+    const tokens = await this.issueSessionTokens(user.id, user.email);
     await this.auditService.write({
       actorUserId: user.id,
       action: "GoogleLoginSuccess",
@@ -90,8 +67,47 @@ export class AuthService {
     });
 
     return {
-      accessToken,
-      refreshToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl ?? null
+      }
+    };
+  }
+
+  async quickLogin(): Promise<AuthResponse> {
+    const quickGoogleSub = "quickLoginLocalUser";
+    const quickEmail = "quick.login@duelmen.local";
+    const user = await this.prisma.user.upsert({
+      where: { googleSub: quickGoogleSub },
+      update: {},
+      create: {
+        googleSub: quickGoogleSub,
+        email: quickEmail,
+        displayName: "Treinador Local",
+        avatarUrl: null,
+        profileHistory: {
+          create: {
+            battleCount: 0,
+            bestStreak: 0,
+            totalDamage: 0
+          }
+        }
+      }
+    });
+    const tokens = await this.issueSessionTokens(user.id, user.email);
+    await this.auditService.write({
+      actorUserId: user.id,
+      action: "QuickLoginSuccess",
+      entityName: "User",
+      entityId: user.id
+    });
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -112,34 +128,39 @@ export class AuthService {
       throw new UnauthorizedException("invalidRefreshToken");
     }
 
-    const accessToken = this.jwtService.sign(
-      { email: user.email },
-      {
-        subject: user.id,
-        secret: process.env.JWT_ACCESS_SECRET,
-        expiresIn: "15m"
-      }
-    );
-    const nextRefreshToken = this.jwtService.sign(
-      { email: user.email, type: "refresh" },
-      {
-        subject: user.id,
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: "30d"
-      }
-    );
-    const nextRefreshHash = await argon2.hash(nextRefreshToken);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: nextRefreshHash }
-    });
+    const tokens = await this.issueSessionTokens(user.id, user.email);
     await this.auditService.write({
       actorUserId: user.id,
       action: "RefreshTokenUsed",
       entityName: "User",
       entityId: user.id
     });
-    return { accessToken, refreshToken: nextRefreshToken };
+    return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
+  }
+
+  private async issueSessionTokens(userId: string, email: string): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken = this.jwtService.sign(
+      { email },
+      {
+        subject: userId,
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: "15m"
+      }
+    );
+    const refreshToken = this.jwtService.sign(
+      { email, type: "refresh" },
+      {
+        subject: userId,
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: "30d"
+      }
+    );
+    const refreshTokenHash = await argon2.hash(refreshToken);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: refreshTokenHash }
+    });
+    return { accessToken, refreshToken };
   }
 
   private async verifyGoogleToken(idToken: string): Promise<TokenPayload> {

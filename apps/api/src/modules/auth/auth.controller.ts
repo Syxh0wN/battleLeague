@@ -16,6 +16,11 @@ export class AuthController {
     return this.authService.loginWithGoogle(dto);
   }
 
+  @Post("quick")
+  async quickLogin() {
+    return this.authService.quickLogin();
+  }
+
   @Post("refresh")
   async refresh(@Body() dto: RefreshTokenDto) {
     const payload = this.jwtService.verify<{ sub: string; type: string }>(dto.refreshToken, {
