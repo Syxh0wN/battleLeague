@@ -351,3 +351,185 @@ nextjs-portal {
 .ChampionMeta small {
   color: var(--TextSecondary);
 }
+
+.PokemonRoot {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.PokemonHero {
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryTeal) 35%, var(--SurfaceLight));
+  background:
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--SecondaryTeal) 25%, transparent), transparent 44%),
+    linear-gradient(150deg, color-mix(in srgb, var(--SurfaceDark) 95%, black), color-mix(in srgb, var(--SurfaceLight) 84%, black));
+  display: grid;
+  gap: 8px;
+}
+
+.PokemonHero h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.PokemonHero p {
+  margin: 0;
+  color: var(--TextSecondary);
+}
+
+.PokemonSection {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 80%, transparent);
+  background: color-mix(in srgb, var(--SurfaceDark) 90%, black);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.PokemonSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.PokemonSectionHeader h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.PokemonSectionHeader small {
+  color: var(--TextSecondary);
+}
+
+.PokemonGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.PokemonCard {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryPurple) 28%, transparent);
+  background: color-mix(in srgb, var(--SecondaryPurple) 10%, var(--SurfaceDark));
+  padding: 11px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.PokemonCardImageWrap {
+  width: 66px;
+  height: 66px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 90%, transparent);
+  background: color-mix(in srgb, black 35%, transparent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.PokemonCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.PokemonCardImageFallback {
+  color: var(--TextSecondary);
+  font-weight: 700;
+}
+
+.PokemonCardMeta {
+  display: grid;
+  gap: 3px;
+}
+
+.PokemonCardMeta strong {
+  text-transform: capitalize;
+}
+
+.PokemonCardMeta small {
+  color: var(--TextSecondary);
+}
+
+.PokemonEmptyState {
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--SurfaceLight) 95%, transparent);
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.PokemonEmptyState strong {
+  font-size: 15px;
+}
+
+.PokemonEmptyState p {
+  margin: 0;
+  color: var(--TextSecondary);
+}
+
+.StarterGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.StarterCard {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 33%, transparent);
+  background: color-mix(in srgb, var(--PrimaryBlue) 11%, var(--SurfaceDark));
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.StarterImageWrap {
+  width: 100%;
+  height: 120px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 90%, transparent);
+  background: color-mix(in srgb, black 35%, transparent);
+  display: grid;
+  place-items: center;
+}
+
+.StarterImage {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.StarterImageFallback {
+  color: var(--TextSecondary);
+  font-weight: 700;
+}
+
+.StarterMeta {
+  display: grid;
+  gap: 3px;
+}
+
+.StarterMeta strong {
+  text-transform: capitalize;
+}
+
+.StarterMeta small {
+  color: var(--TextSecondary);
+}
+
+.StarterClaimButton {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(145deg, var(--PrimaryBlue), var(--SecondaryPurple));
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
