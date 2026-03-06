@@ -11,22 +11,22 @@ export default function LoginPage() {
         </div>
 
         <div className="LoginHighlights">
-          <span>Duelos1v1</span>
-          <span>EvolucaoComTempo</span>
-          <span>HistoricoCompleto</span>
+          <span>Duelos 1v1</span>
+          <span>Evolucao com tempo</span>
+          <span>Historico completo</span>
         </div>
 
         <div className="LoginActionPanel">
-          <strong>SuaContaSeuProgresso</strong>
+          <strong>Sua conta, seu progresso</strong>
           <small>Login rapido com Google para continuar de onde parou.</small>
         </div>
 
         <GoogleLoginButton />
 
         <div className="LoginFootNote">
-          <span>DropEmCaixa</span>
-          <span>MissoesDiarias</span>
-          <span>RankingSemanal</span>
+          <span>Drop em caixa</span>
+          <span>Missoes diarias</span>
+          <span>Ranking semanal</span>
         </div>
       </section>
     </main>
