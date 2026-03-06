@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@duelmen/shared-types": [
+        "packages/shared-types/src"
+      ],
+      "@duelmen/game-engine": [
+        "packages/game-engine/src"
+      ]
+    }
+  }
+}

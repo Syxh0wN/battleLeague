@@ -1,0 +1,16 @@
+{
+  "name": "pokemonDuelMonorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @duelmen/api",
+    "dev:web": "npm run dev --workspace @duelmen/web",
+    "dev:api": "npm run dev --workspace @duelmen/api",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  }
+}
