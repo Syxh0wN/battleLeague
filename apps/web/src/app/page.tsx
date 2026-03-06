@@ -2,30 +2,25 @@ import { GoogleLoginButton } from "../components/google-login-button";
 
 export default function LoginPage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        padding: 24
-      }}
-    >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: 460,
-          background: "var(--SurfaceDark)",
-          border: "1px solid var(--SurfaceLight)",
-          borderRadius: 16,
-          padding: 28,
-          display: "grid",
-          gap: 18
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 28 }}>Pokemon Duel Men</h1>
-        <p style={{ margin: 0, color: "var(--TextSecondary)" }}>
-          Login e registro por Google para iniciar suas batalhas.
-        </p>
+    <main className="LoginScreen">
+      <section className="LoginShell">
+        <div className="LoginHeader">
+          <span className="LoginKicker">LigaRankedOnline</span>
+          <h1>Pokemon Duel Men</h1>
+          <p>Entre com Google para desbloquear seus pokemons, duelos e ranking.</p>
+        </div>
+
+        <div className="LoginHighlights">
+          <span>1v1 TurnoAssincrono</span>
+          <span>EvolucaoComCooldown</span>
+          <span>HistoricoDeBatalha</span>
+        </div>
+
+        <div className="LoginActionPanel">
+          <strong>ProntoParaSuaPrimeiraBatalha</strong>
+          <small>Conta unica, progresso salvo e social ativo com amigos.</small>
+        </div>
+
         <GoogleLoginButton />
       </section>
     </main>

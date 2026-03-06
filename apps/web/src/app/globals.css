@@ -33,3 +33,94 @@ a {
 button {
   font-family: inherit;
 }
+
+.LoginScreen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--SecondaryPurple) 28%, transparent), transparent 45%),
+    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--PrimaryBlue) 26%, transparent), transparent 48%),
+    var(--BackgroundDark);
+}
+
+.LoginShell {
+  width: 100%;
+  max-width: 540px;
+  padding: 32px;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryPurple) 40%, var(--SurfaceLight));
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--SurfaceDark) 92%, black), color-mix(in srgb, var(--SurfaceLight) 88%, black));
+  box-shadow:
+    0 20px 50px color-mix(in srgb, black 65%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 10%, transparent);
+  display: grid;
+  gap: 18px;
+}
+
+.LoginHeader {
+  display: grid;
+  gap: 10px;
+}
+
+.LoginHeader h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: 0.2px;
+}
+
+.LoginHeader p {
+  margin: 0;
+  color: var(--TextSecondary);
+  font-size: 15px;
+}
+
+.LoginKicker {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--PrimaryYellow) 22%, transparent);
+  color: color-mix(in srgb, var(--PrimaryYellow) 84%, white);
+  border: 1px solid color-mix(in srgb, var(--PrimaryYellow) 35%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.LoginHighlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.LoginHighlights span {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 28%, transparent);
+  background: color-mix(in srgb, var(--PrimaryBlue) 16%, transparent);
+  color: color-mix(in srgb, var(--TextPrimary) 94%, var(--PrimaryBlue));
+  font-size: 12px;
+  padding: 6px 10px;
+  font-weight: 600;
+}
+
+.LoginActionPanel {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryTeal) 35%, transparent);
+  background: color-mix(in srgb, var(--SecondaryTeal) 12%, transparent);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.LoginActionPanel strong {
+  font-size: 14px;
+}
+
+.LoginActionPanel small {
+  color: var(--TextSecondary);
+  font-size: 12px;
+}
