@@ -9,10 +9,19 @@ import { SubmitTurnDto } from "./dto/submit-turn.dto";
 
 @Injectable()
 export class BattleService {
+  private readonly userPresence = new Map<string, number>();
+  private readonly pvpScheduleMs = 60_000;
+  private readonly presenceWindowMs = 90_000;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService
   ) {}
+
+  async registerPresence(userId: string) {
+    this.userPresence.set(userId, Date.now());
+    return { ok: true };
+  }
 
   async listBattleSuggestions(challengerId: string) {
     await this.ensureDemoOpponents(challengerId);
@@ -90,14 +99,18 @@ export class BattleService {
       throw new BadRequestException("pokemonInRestCooldown");
     }
 
+    const scheduleInMinutes = dto.scheduleInMinutes ?? 1;
+    const scheduledStartAt = new Date(Date.now() + scheduleInMinutes * 60_000);
+    const expiresAt = new Date(scheduledStartAt.getTime() + 6 * 60 * 60 * 1000);
+
     const battle = await this.prisma.battle.create({
       data: {
         challengerId,
         opponentId: dto.opponentUserId,
         challengerPokemonId: challengerPokemon.id,
         opponentPokemonId: opponentPokemon.id,
-        status: BattleStatus.active,
-        expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000)
+        status: BattleStatus.pending,
+        expiresAt
       },
       include: {
         challengerPokemon: true,
@@ -109,9 +122,12 @@ export class BattleService {
       action: "BattleCreated",
       entityName: "Battle",
       entityId: battle.id,
-      payload: { opponentUserId: dto.opponentUserId }
+      payload: { opponentUserId: dto.opponentUserId, scheduledStartAt: scheduledStartAt.toISOString() }
     });
-    return battle;
+    return {
+      ...battle,
+      scheduledStartAt
+    };
   }
 
   async createAiBattle(challengerId: string, dto: CreateAiBattleDto) {
@@ -166,6 +182,17 @@ export class BattleService {
     });
     if (!battle) {
       throw new NotFoundException("battleNotFound");
+    }
+    const scheduledStartAt = new Date(battle.createdAt.getTime() + this.pvpScheduleMs);
+    if (battle.status === BattleStatus.pending) {
+      if (Date.now() < scheduledStartAt.getTime()) {
+        throw new BadRequestException("battleNotStartedYet");
+      }
+      await this.prisma.battle.update({
+        where: { id: battle.id },
+        data: { status: BattleStatus.active }
+      });
+      battle.status = BattleStatus.active;
     }
     if (battle.status !== BattleStatus.active) {
       throw new BadRequestException("battleIsNotActive");
@@ -238,9 +265,10 @@ export class BattleService {
     let finalResult = result;
 
     const isAiBattle = battle.opponent.googleSub.startsWith("ai_");
+    const isOfflineOpponentProxy = !isAiBattle && !this.isUserOnline(battle.opponentId);
     const playerIsChallenger = userId === battle.challengerId;
-    if (isAiBattle && playerIsChallenger && !result.winner) {
-      const aiAction = this.pickAiAction(battle.opponent.googleSub);
+    if ((isAiBattle || isOfflineOpponentProxy) && playerIsChallenger && !result.winner) {
+      const aiAction = this.pickAiAction(isAiBattle ? battle.opponent.googleSub : "offline_proxy");
       const aiChallengerState = {
         currentHp: result.challengerHp,
         maxHp: battle.challengerPokemon.currentHp,
@@ -321,7 +349,19 @@ export class BattleService {
     if (battle.challengerId !== userId && battle.opponentId !== userId) {
       throw new ForbiddenException("battleAccessDenied");
     }
-    return battle;
+    const scheduledStartAt = new Date(battle.createdAt.getTime() + this.pvpScheduleMs);
+    if (battle.status === BattleStatus.pending && Date.now() >= scheduledStartAt.getTime()) {
+      await this.prisma.battle.update({
+        where: { id: battle.id },
+        data: { status: BattleStatus.active }
+      });
+      battle.status = BattleStatus.active;
+    }
+    return {
+      ...battle,
+      scheduledStartAt,
+      fallbackAiForOfflineOpponent: !battle.opponent.googleSub.startsWith("ai_")
+    };
   }
 
   private pickAiAction(googleSub: string): "attack" | "defend" | "skill" {
@@ -337,6 +377,15 @@ export class BattleService {
     }
     if (googleSub.includes("_easy_")) {
       if (randomValue < 0.6) {
+        return "attack";
+      }
+      if (randomValue < 0.8) {
+        return "defend";
+      }
+      return "skill";
+    }
+    if (googleSub.includes("offline_proxy")) {
+      if (randomValue < 0.5) {
         return "attack";
       }
       if (randomValue < 0.8) {
@@ -557,5 +606,13 @@ export class BattleService {
         }
       })
     ]);
+  }
+
+  private isUserOnline(userId: string): boolean {
+    const lastSeen = this.userPresence.get(userId);
+    if (!lastSeen) {
+      return false;
+    }
+    return Date.now() - lastSeen <= this.presenceWindowMs;
   }
 }

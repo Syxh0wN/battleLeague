@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,8 @@ type BattleTurn = {
 type BattleDetails = {
   id: string;
   status: "pending" | "active" | "finished" | "expired";
+  scheduledStartAt: string;
+  fallbackAiForOfflineOpponent: boolean;
   winnerUserId: string | null;
   challenger: { id: string; displayName: string };
   opponent: { id: string; displayName: string };
@@ -70,6 +72,24 @@ export default function BattleDetailsPage() {
     }
   });
 
+  useEffect(() => {
+    if (!battleId) {
+      return;
+    }
+    const ping = async () => {
+      try {
+        await ApiFetch<{ ok: boolean }>("/battles/presence", { method: "POST" });
+      } catch {}
+    };
+    void ping();
+    const intervalId = window.setInterval(() => {
+      void ping();
+    }, 20_000);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [battleId]);
+
   const battle = battleQuery.data;
   const lastTurn = useMemo(() => {
     if (!battle || battle.turns.length === 0) {
@@ -80,6 +100,10 @@ export default function BattleDetailsPage() {
 
   const challengerCurrentHp = lastTurn?.challengerHp ?? 0;
   const opponentCurrentHp = lastTurn?.opponentHp ?? 0;
+  const scheduledStartAt = battle ? new Date(battle.scheduledStartAt) : null;
+  const battleStartsInMs = scheduledStartAt ? Math.max(0, scheduledStartAt.getTime() - Date.now()) : 0;
+  const battleStartsInSec = Math.floor(battleStartsInMs / 1000);
+  const canPlayTurn = battle?.status === "active";
 
   return (
     <main className="BattleDetailRoot">
@@ -109,6 +133,14 @@ export default function BattleDetailsPage() {
               <h2>Status da partida</h2>
               <small>Status: {battle.status}</small>
             </div>
+            {battle.status === "pending" ? (
+              <div className="BattleTinyNote">
+                Duelo agendado. Inicio em {battleStartsInSec}s.
+              </div>
+            ) : null}
+            {battle.fallbackAiForOfflineOpponent ? (
+              <div className="BattleTinyNote">Se o oponente ficar offline, a IA luta por ele automaticamente.</div>
+            ) : null}
             <div className="BattleVersusGrid">
               <article className="BattleFighterCard">
                 <strong>{battle.challenger.displayName}</strong>
@@ -130,13 +162,13 @@ export default function BattleDetailsPage() {
               <small>Acao atual</small>
             </div>
             <div className="BattleActionGrid">
-              <button className="BattleActionButton" onClick={() => turnMutation.mutate("attack")} disabled={turnMutation.isPending}>
+              <button className="BattleActionButton" onClick={() => turnMutation.mutate("attack")} disabled={turnMutation.isPending || !canPlayTurn}>
                 Attack
               </button>
-              <button className="BattleActionButton" onClick={() => turnMutation.mutate("defend")} disabled={turnMutation.isPending}>
+              <button className="BattleActionButton" onClick={() => turnMutation.mutate("defend")} disabled={turnMutation.isPending || !canPlayTurn}>
                 Defend
               </button>
-              <button className="BattleActionButton" onClick={() => turnMutation.mutate("skill")} disabled={turnMutation.isPending}>
+              <button className="BattleActionButton" onClick={() => turnMutation.mutate("skill")} disabled={turnMutation.isPending || !canPlayTurn}>
                 Skill
               </button>
             </div>

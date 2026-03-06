@@ -77,6 +77,7 @@ export default function BattlesPage() {
   const [battleError, setBattleError] = useState("");
   const [selectedAiDifficulty, setSelectedAiDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [isCreatingAiBattle, setIsCreatingAiBattle] = useState(false);
+  const [scheduleInMinutes, setScheduleInMinutes] = useState(1);
 
   const suggestionsQuery = useQuery({
     queryKey: ["battleSuggestions"],
@@ -111,7 +112,8 @@ export default function BattlesPage() {
         body: JSON.stringify({
           opponentUserId,
           challengerPokemonId,
-          opponentPokemonId
+          opponentPokemonId,
+          scheduleInMinutes
         })
       });
       setCreatedPvpBattleId(response.id);
@@ -182,7 +184,7 @@ export default function BattlesPage() {
       <section className="BattlesSection">
         <div className="BattlesSectionHeader">
           <h2>Duelos com jogadores</h2>
-          <small>Selecione amigo, pokemons e crie seu confronto PvP.</small>
+          <small>Selecione amigo, pokemons e agende seu confronto PvP.</small>
         </div>
 
         <div className="BattleSuggestWrap">
@@ -230,6 +232,20 @@ export default function BattlesPage() {
             </div>
           </div>
 
+          <label className="BattleFormField">
+            <span>Agendamento (minutos)</span>
+            <select
+              className="BattleSelectInput"
+              value={scheduleInMinutes}
+              onChange={(event) => setScheduleInMinutes(Number(event.target.value))}
+            >
+              <option value={1}>1 minuto</option>
+              <option value={3}>3 minutos</option>
+              <option value={5}>5 minutos</option>
+              <option value={10}>10 minutos</option>
+            </select>
+          </label>
+
           <div className="BattlePreviewWrap">
             <span className="BattlePickerTitle">Preview do jogador</span>
             {!opponentUserId ? (
@@ -268,7 +284,7 @@ export default function BattlesPage() {
           </div>
 
           <button type="submit" className="BattleCreateButton" disabled={isCreatingBattle}>
-            {isCreatingBattle ? "Criando duelo..." : "Criar Batalha"}
+            {isCreatingBattle ? "Agendando duelo..." : "Agendar Batalha"}
           </button>
         </form>
 

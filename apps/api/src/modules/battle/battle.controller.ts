@@ -22,6 +22,11 @@ export class BattleController {
     return this.battleService.listBattleSuggestions(user.userId);
   }
 
+  @Post("presence")
+  async registerPresence(@CurrentUser() user: AuthUser) {
+    return this.battleService.registerPresence(user.userId);
+  }
+
   @Get("ai/opponents")
   async listAiOpponents() {
     return this.battleService.listAiOpponents();

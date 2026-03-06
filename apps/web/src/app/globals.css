@@ -741,7 +741,21 @@ nextjs-portal {
   outline: none;
 }
 
+.BattleSelectInput {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 95%, transparent);
+  background: color-mix(in srgb, black 20%, var(--SurfaceDark));
+  color: var(--TextPrimary);
+  padding: 10px 12px;
+  outline: none;
+}
+
 .BattleFormField input:focus {
+  border-color: color-mix(in srgb, var(--SecondaryPurple) 70%, transparent);
+}
+
+.BattleSelectInput:focus {
   border-color: color-mix(in srgb, var(--SecondaryPurple) 70%, transparent);
 }
 
