@@ -34,6 +34,10 @@ button {
   font-family: inherit;
 }
 
+nextjs-portal {
+  display: none !important;
+}
+
 .LoginScreen {
   min-height: 100vh;
   display: grid;
