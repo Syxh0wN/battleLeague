@@ -50,6 +50,13 @@ type OpponentProfile = {
   }>;
 };
 
+type AiOpponent = {
+  id: "easy" | "normal" | "hard";
+  name: string;
+  difficulty: "easy" | "normal" | "hard";
+  strategy: string;
+};
+
 export default function BattlesPage() {
   const [opponentUserId, setOpponentUserId] = useState("");
   const [challengerPokemonId, setChallengerPokemonId] = useState("");
@@ -57,6 +64,8 @@ export default function BattlesPage() {
   const [createdBattleId, setCreatedBattleId] = useState("");
   const [isCreatingBattle, setIsCreatingBattle] = useState(false);
   const [battleError, setBattleError] = useState("");
+  const [selectedAiDifficulty, setSelectedAiDifficulty] = useState<"easy" | "normal" | "hard">("normal");
+  const [isCreatingAiBattle, setIsCreatingAiBattle] = useState(false);
 
   const friendsQuery = useQuery({
     queryKey: ["friendsForBattle"],
@@ -71,6 +80,10 @@ export default function BattlesPage() {
     queryFn: () => ApiFetch<OpponentProfile>(`/users/${opponentUserId}`),
     enabled: opponentUserId.trim().length > 0
   });
+  const aiOpponentsQuery = useQuery({
+    queryKey: ["aiOpponentsForBattle"],
+    queryFn: () => ApiFetch<AiOpponent[]>("/battles/ai/opponents")
+  });
 
   const suggestedFriends = useMemo(() => {
     const friends = friendsQuery.data ?? [];
@@ -79,6 +92,7 @@ export default function BattlesPage() {
 
   const myPokemons = myPokemonsQuery.data ?? [];
   const opponentPreview = opponentPreviewQuery.data;
+  const aiOpponents = aiOpponentsQuery.data ?? [];
 
   async function HandleCreateBattle(event: FormEvent) {
     event.preventDefault();
@@ -100,6 +114,29 @@ export default function BattlesPage() {
       setIsCreatingBattle(false);
     }
   }
+
+  const handleCreateAiBattle = async () => {
+    if (!challengerPokemonId) {
+      setBattleError("Selecione seu pokemon para desafiar a IA.");
+      return;
+    }
+    setBattleError("");
+    setIsCreatingAiBattle(true);
+    try {
+      const response = await ApiFetch<CreateBattleResponse>("/battles/ai", {
+        method: "POST",
+        body: JSON.stringify({
+          challengerPokemonId,
+          difficulty: selectedAiDifficulty
+        })
+      });
+      setCreatedBattleId(response.id);
+    } catch {
+      setBattleError("Nao foi possivel criar duelo com IA.");
+    } finally {
+      setIsCreatingAiBattle(false);
+    }
+  };
 
   const handleChooseFriend = (friendId: string) => {
     setOpponentUserId(friendId);
@@ -187,24 +224,6 @@ export default function BattlesPage() {
             </div>
           </div>
 
-          <label className="BattleFormField">
-            <span>Seu Pokemon ID</span>
-            <input
-              value={challengerPokemonId}
-              onChange={(event) => setChallengerPokemonId(event.target.value)}
-              placeholder="YourPokemonId"
-            />
-          </label>
-
-          <label className="BattleFormField">
-            <span>Pokemon ID do oponente</span>
-            <input
-              value={opponentPokemonId}
-              onChange={(event) => setOpponentPokemonId(event.target.value)}
-              placeholder="OpponentPokemonId"
-            />
-          </label>
-
           <div className="BattlePreviewWrap">
             <span className="BattlePickerTitle">Preview do jogador</span>
             {!opponentUserId ? (
@@ -242,10 +261,43 @@ export default function BattlesPage() {
             )}
           </div>
 
+          <div className="BattleSelectionSummary">
+            <small>Seu Pokemon Selecionado: {challengerPokemonId || "Nao selecionado"}</small>
+            <small>Pokemon Oponente Selecionado: {opponentPokemonId || "Nao selecionado"}</small>
+          </div>
+
           <button type="submit" className="BattleCreateButton" disabled={isCreatingBattle}>
             {isCreatingBattle ? "Criando duelo..." : "Criar Batalha"}
           </button>
         </form>
+
+        <div className="BattleAiWrap">
+          <div className="BattlesSectionHeader">
+            <h2>Desafiar IA</h2>
+            <small>Escolha dificuldade e crie duelo automatico.</small>
+          </div>
+          <div className="BattleAiGrid">
+            {aiOpponents.length === 0 ? (
+              <div className="BattleTinyNote">Sem perfis de IA disponiveis.</div>
+            ) : (
+              aiOpponents.map((ai) => (
+                <button
+                  key={ai.id}
+                  type="button"
+                  className={`BattleAiCard ${selectedAiDifficulty === ai.difficulty ? "BattleAiCardActive" : ""}`}
+                  onClick={() => setSelectedAiDifficulty(ai.difficulty)}
+                >
+                  <strong>{ai.name}</strong>
+                  <small>Dificuldade: {ai.difficulty}</small>
+                  <small>{ai.strategy}</small>
+                </button>
+              ))
+            )}
+          </div>
+          <button type="button" className="BattleCreateButton" disabled={isCreatingAiBattle} onClick={handleCreateAiBattle}>
+            {isCreatingAiBattle ? "Criando duelo IA..." : "Criar Batalha com IA"}
+          </button>
+        </div>
 
         {createdBattleId ? (
           <article className="BattleCreatedCard">

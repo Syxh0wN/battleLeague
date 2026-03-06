@@ -3,6 +3,7 @@ import { CurrentUser } from "../../common/auth-user.decorator";
 import { AuthUser } from "../../common/auth-user.type";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { BattleService } from "./battle.service";
+import { CreateAiBattleDto } from "./dto/create-ai-battle.dto";
 import { CreateBattleDto } from "./dto/create-battle.dto";
 import { SubmitTurnDto } from "./dto/submit-turn.dto";
 
@@ -14,6 +15,16 @@ export class BattleController {
   @Post()
   async createBattle(@CurrentUser() user: AuthUser, @Body() dto: CreateBattleDto) {
     return this.battleService.createBattle(user.userId, dto);
+  }
+
+  @Get("ai/opponents")
+  async listAiOpponents() {
+    return this.battleService.listAiOpponents();
+  }
+
+  @Post("ai")
+  async createAiBattle(@CurrentUser() user: AuthUser, @Body() dto: CreateAiBattleDto) {
+    return this.battleService.createAiBattle(user.userId, dto);
   }
 
   @Post(":battleId/turn")

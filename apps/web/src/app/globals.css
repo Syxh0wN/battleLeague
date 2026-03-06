@@ -864,3 +864,49 @@ nextjs-portal {
   color: var(--TextSecondary);
   padding: 10px 12px;
 }
+
+.BattleSelectionSummary {
+  display: grid;
+  gap: 4px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 90%, transparent);
+  background: color-mix(in srgb, black 18%, var(--SurfaceDark));
+  padding: 10px 12px;
+}
+
+.BattleSelectionSummary small {
+  color: var(--TextSecondary);
+}
+
+.BattleAiWrap {
+  display: grid;
+  gap: 10px;
+}
+
+.BattleAiGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  max-width: 760px;
+}
+
+.BattleAiCard {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryTeal) 35%, transparent);
+  background: color-mix(in srgb, var(--SecondaryTeal) 10%, var(--SurfaceDark));
+  color: var(--TextPrimary);
+  padding: 10px;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.BattleAiCard small {
+  color: var(--TextSecondary);
+}
+
+.BattleAiCardActive {
+  border-color: color-mix(in srgb, var(--PrimaryYellow) 70%, transparent);
+  background: color-mix(in srgb, var(--PrimaryYellow) 12%, var(--SurfaceDark));
+}
