@@ -69,6 +69,7 @@ type AiOpponent = {
 export default function BattlesPage() {
   const [opponentUserId, setOpponentUserId] = useState("");
   const [challengerPokemonId, setChallengerPokemonId] = useState("");
+  const [aiChallengerPokemonId, setAiChallengerPokemonId] = useState("");
   const [opponentPokemonId, setOpponentPokemonId] = useState("");
   const [createdPvpBattleId, setCreatedPvpBattleId] = useState("");
   const [createdAiBattleId, setCreatedAiBattleId] = useState("");
@@ -123,7 +124,7 @@ export default function BattlesPage() {
   }
 
   const handleCreateAiBattle = async () => {
-    if (!challengerPokemonId) {
+    if (!aiChallengerPokemonId) {
       setBattleError("Selecione seu pokemon para desafiar a IA.");
       return;
     }
@@ -133,7 +134,7 @@ export default function BattlesPage() {
       const response = await ApiFetch<CreateBattleResponse>("/battles/ai", {
         method: "POST",
         body: JSON.stringify({
-          challengerPokemonId,
+          challengerPokemonId: aiChallengerPokemonId,
           difficulty: selectedAiDifficulty
         })
       });
@@ -291,6 +292,27 @@ export default function BattlesPage() {
         </div>
 
         <div className="BattleAiWrap">
+          <div className="BattlePickerSection">
+            <span className="BattlePickerTitle">Escolha seu Pokemon para duelo IA</span>
+            <div className="BattlePickerGrid">
+              {myPokemons.length === 0 ? (
+                <div className="BattleTinyNote">Sem pokemon no time.</div>
+              ) : (
+                myPokemons.map((pokemon) => (
+                  <button
+                    key={`ai_${pokemon.id}`}
+                    className={`BattlePokemonPick ${aiChallengerPokemonId === pokemon.id ? "BattlePokemonPickActive" : ""}`}
+                    type="button"
+                    onClick={() => setAiChallengerPokemonId(pokemon.id)}
+                  >
+                    <strong>{pokemon.species.name}</strong>
+                    <small>Lv {pokemon.level}</small>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
           <div className="BattleAiGrid">
             {aiOpponents.length === 0 ? (
               <div className="BattleTinyNote">Sem perfis de IA disponiveis.</div>
