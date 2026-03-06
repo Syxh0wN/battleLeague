@@ -14,6 +14,37 @@ export class BattleService {
     private readonly auditService: AuditService
   ) {}
 
+  async listBattleSuggestions(challengerId: string) {
+    await this.ensureDemoOpponents(challengerId);
+    const opponents = await this.prisma.user.findMany({
+      where: {
+        id: { not: challengerId },
+        NOT: {
+          googleSub: { startsWith: "ai_" }
+        }
+      },
+      orderBy: [{ level: "desc" }, { totalWins: "desc" }],
+      take: 8,
+      include: {
+        pokemons: {
+          include: { species: true },
+          orderBy: [{ wins: "desc" }, { level: "desc" }],
+          take: 3
+        }
+      }
+    });
+
+    return opponents.map((opponent) => ({
+      id: opponent.id,
+      displayName: opponent.displayName,
+      avatarUrl: opponent.avatarUrl,
+      level: opponent.level,
+      totalWins: opponent.totalWins,
+      totalLosses: opponent.totalLosses,
+      champions: opponent.pokemons
+    }));
+  }
+
   async listAiOpponents() {
     return [
       {
@@ -382,6 +413,95 @@ export class BattleService {
     });
 
     return { aiUser, aiPokemon };
+  }
+
+  private async ensureDemoOpponents(challengerId: string) {
+    const availableOpponentsCount = await this.prisma.user.count({
+      where: {
+        id: { not: challengerId },
+        NOT: {
+          googleSub: { startsWith: "ai_" }
+        }
+      }
+    });
+    if (availableOpponentsCount >= 4) {
+      return;
+    }
+
+    const speciesCatalog = await this.prisma.pokemonSpecies.findMany({
+      orderBy: { pokeApiId: "asc" },
+      take: 20
+    });
+    if (speciesCatalog.length === 0) {
+      return;
+    }
+
+    const demoPlayers = [
+      { googleSub: "demo_rival_blaze", email: "rival.blaze@duelmen.local", displayName: "Rival Blaze", level: 8, wins: 9, losses: 4 },
+      { googleSub: "demo_rival_sky", email: "rival.sky@duelmen.local", displayName: "Rival Sky", level: 6, wins: 5, losses: 3 },
+      { googleSub: "demo_rival_frost", email: "rival.frost@duelmen.local", displayName: "Rival Frost", level: 7, wins: 7, losses: 5 },
+      { googleSub: "demo_rival_vine", email: "rival.vine@duelmen.local", displayName: "Rival Vine", level: 5, wins: 3, losses: 4 }
+    ] as const;
+
+    for (let index = 0; index < demoPlayers.length; index += 1) {
+      const demo = demoPlayers[index];
+      const user = await this.prisma.user.upsert({
+        where: { googleSub: demo.googleSub },
+        update: {
+          displayName: demo.displayName,
+          level: demo.level,
+          totalWins: demo.wins,
+          totalLosses: demo.losses
+        },
+        create: {
+          googleSub: demo.googleSub,
+          email: demo.email,
+          displayName: demo.displayName,
+          level: demo.level,
+          totalWins: demo.wins,
+          totalLosses: demo.losses,
+          profileHistory: {
+            create: {
+              battleCount: demo.wins + demo.losses,
+              bestStreak: Math.max(2, Math.floor(demo.wins / 2)),
+              totalDamage: 200 + demo.wins * 15
+            }
+          }
+        }
+      });
+
+      const existingPokemonCount = await this.prisma.userPokemon.count({
+        where: { userId: user.id }
+      });
+      if (existingPokemonCount >= 2) {
+        continue;
+      }
+
+      const firstSpecies = speciesCatalog[index % speciesCatalog.length];
+      const secondSpecies = speciesCatalog[(index + 4) % speciesCatalog.length];
+      const chosenSpecies = [firstSpecies, secondSpecies];
+
+      for (let speciesIndex = 0; speciesIndex < chosenSpecies.length; speciesIndex += 1) {
+        const species = chosenSpecies[speciesIndex];
+        const statBonus = demo.level + speciesIndex;
+        await this.prisma.userPokemon.create({
+          data: {
+            userId: user.id,
+            speciesId: species.id,
+            level: demo.level + speciesIndex,
+            xp: (demo.level + speciesIndex) * 15,
+            currentHp: species.baseHp + statBonus * 2,
+            atk: species.baseAtk + statBonus,
+            def: species.baseDef + statBonus,
+            speed: species.baseSpeed + Math.floor(statBonus / 2),
+            wins: Math.max(0, demo.wins - speciesIndex),
+            losses: Math.max(0, demo.losses - speciesIndex),
+            restCooldownUntil: null,
+            evolveCooldownUntil: null
+          }
+        });
+      }
+    }
   }
 
   private async finishBattle(

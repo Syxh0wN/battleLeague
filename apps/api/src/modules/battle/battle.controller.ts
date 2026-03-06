@@ -17,6 +17,11 @@ export class BattleController {
     return this.battleService.createBattle(user.userId, dto);
   }
 
+  @Get("suggestions")
+  async listBattleSuggestions(@CurrentUser() user: AuthUser) {
+    return this.battleService.listBattleSuggestions(user.userId);
+  }
+
   @Get("ai/opponents")
   async listAiOpponents() {
     return this.battleService.listAiOpponents();

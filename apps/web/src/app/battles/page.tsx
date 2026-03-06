@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -11,11 +10,21 @@ type CreateBattleResponse = {
   status: string;
 };
 
-type FriendItem = {
+type SuggestedOpponent = {
   id: string;
   displayName: string;
   avatarUrl: string | null;
   level: number;
+  totalWins: number;
+  totalLosses: number;
+  champions: Array<{
+    id: string;
+    level: number;
+    species: {
+      name: string;
+      imageUrl: string | null;
+    };
+  }>;
 };
 
 type MyPokemonItem = {
@@ -68,9 +77,9 @@ export default function BattlesPage() {
   const [selectedAiDifficulty, setSelectedAiDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [isCreatingAiBattle, setIsCreatingAiBattle] = useState(false);
 
-  const friendsQuery = useQuery({
-    queryKey: ["friendsForBattle"],
-    queryFn: () => ApiFetch<FriendItem[]>("/social/friends")
+  const suggestionsQuery = useQuery({
+    queryKey: ["battleSuggestions"],
+    queryFn: () => ApiFetch<SuggestedOpponent[]>("/battles/suggestions")
   });
   const myPokemonsQuery = useQuery({
     queryKey: ["myPokemonsForBattle"],
@@ -86,14 +95,10 @@ export default function BattlesPage() {
     queryFn: () => ApiFetch<AiOpponent[]>("/battles/ai/opponents")
   });
 
-  const suggestedFriends = useMemo(() => {
-    const friends = friendsQuery.data ?? [];
-    return [...friends].sort((a, b) => b.level - a.level).slice(0, 4);
-  }, [friendsQuery.data]);
-
   const myPokemons = myPokemonsQuery.data ?? [];
   const opponentPreview = opponentPreviewQuery.data;
   const aiOpponents = aiOpponentsQuery.data ?? [];
+  const suggestedOpponents = suggestionsQuery.data ?? [];
 
   async function HandleCreateBattle(event: FormEvent) {
     event.preventDefault();
@@ -141,8 +146,8 @@ export default function BattlesPage() {
     }
   };
 
-  const handleChooseFriend = (friendId: string) => {
-    setOpponentUserId(friendId);
+  const handleChooseOpponent = (opponentId: string) => {
+    setOpponentUserId(opponentId);
     setOpponentPokemonId("");
   };
 
@@ -182,18 +187,20 @@ export default function BattlesPage() {
         <div className="BattleSuggestWrap">
           <strong>Sugestoes para desafiar</strong>
           <div className="BattleSuggestGrid">
-            {suggestedFriends.length === 0 ? (
-              <div className="BattleTinyNote">Sem amigos ainda. Adicione em Social para receber sugestoes.</div>
+            {suggestedOpponents.length === 0 ? (
+              <div className="BattleTinyNote">Gerando oponentes de sugestao...</div>
             ) : (
-              suggestedFriends.map((friend) => (
+              suggestedOpponents.map((opponent) => (
                 <button
-                  key={friend.id}
+                  key={opponent.id}
                   className="BattleSuggestCard"
                   type="button"
-                  onClick={() => handleChooseFriend(friend.id)}
+                  onClick={() => handleChooseOpponent(opponent.id)}
                 >
-                  <span className="BattleSuggestName">{friend.displayName}</span>
-                  <small>Level {friend.level}</small>
+                  <span className="BattleSuggestName">{opponent.displayName}</span>
+                  <small>
+                    Level {opponent.level} | W/L {opponent.totalWins}/{opponent.totalLosses}
+                  </small>
                 </button>
               ))
             )}
@@ -201,10 +208,11 @@ export default function BattlesPage() {
         </div>
 
         <form onSubmit={HandleCreateBattle} className="BattleFormGrid">
-          <label className="BattleFormField">
-            <span>ID do oponente</span>
-            <input value={opponentUserId} onChange={(event) => setOpponentUserId(event.target.value)} placeholder="OpponentUserId" />
-          </label>
+          <div className="BattleSelectionSummary">
+            <small>Oponente selecionado: {opponentUserId || "Nenhum"}</small>
+            <small>Seu Pokemon selecionado: {challengerPokemonId || "Nenhum"}</small>
+            <small>Pokemon oponente selecionado: {opponentPokemonId || "Nenhum"}</small>
+          </div>
 
           <div className="BattlePickerSection">
             <span className="BattlePickerTitle">Escolha seu Pokemon</span>
@@ -262,11 +270,6 @@ export default function BattlesPage() {
                 </div>
               </article>
             )}
-          </div>
-
-          <div className="BattleSelectionSummary">
-            <small>Seu Pokemon Selecionado: {challengerPokemonId || "Nao selecionado"}</small>
-            <small>Pokemon Oponente Selecionado: {opponentPokemonId || "Nao selecionado"}</small>
           </div>
 
           <button type="submit" className="BattleCreateButton" disabled={isCreatingBattle}>
