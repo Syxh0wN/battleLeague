@@ -754,3 +754,113 @@ nextjs-portal {
   padding: 12px;
   max-width: 560px;
 }
+
+.BattleSuggestWrap {
+  display: grid;
+  gap: 8px;
+}
+
+.BattleSuggestWrap strong {
+  font-size: 14px;
+}
+
+.BattleSuggestGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  max-width: 760px;
+}
+
+.BattleSuggestCard {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 35%, transparent);
+  background: color-mix(in srgb, var(--PrimaryBlue) 10%, transparent);
+  color: var(--TextPrimary);
+  padding: 10px;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.BattleSuggestName {
+  font-weight: 700;
+}
+
+.BattleSuggestCard small {
+  color: var(--TextSecondary);
+}
+
+.BattlePickerSection {
+  display: grid;
+  gap: 8px;
+}
+
+.BattlePickerTitle {
+  font-size: 12px;
+  color: var(--TextSecondary);
+  font-weight: 600;
+}
+
+.BattlePickerGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.BattlePokemonPick {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--SurfaceLight) 95%, transparent);
+  background: color-mix(in srgb, black 18%, var(--SurfaceDark));
+  color: var(--TextPrimary);
+  padding: 10px;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.BattlePokemonPick small {
+  color: var(--TextSecondary);
+}
+
+.BattlePokemonPickActive {
+  border-color: color-mix(in srgb, var(--SecondaryPurple) 75%, transparent);
+  background: color-mix(in srgb, var(--SecondaryPurple) 16%, transparent);
+}
+
+.BattlePreviewWrap {
+  display: grid;
+  gap: 8px;
+}
+
+.BattleOpponentPreviewCard {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--SecondaryTeal) 38%, transparent);
+  background: color-mix(in srgb, var(--SecondaryTeal) 10%, var(--SurfaceDark));
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.BattleOpponentHeader {
+  display: grid;
+  gap: 2px;
+}
+
+.BattleOpponentHeader small {
+  color: var(--TextSecondary);
+}
+
+.BattleOpponentPokemonList {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.BattleTinyNote {
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--SurfaceLight) 95%, transparent);
+  color: var(--TextSecondary);
+  padding: 10px 12px;
+}
