@@ -10,7 +10,7 @@ import { PokemonModule } from "./modules/pokemon/pokemon.module";
 import { ProgressionModule } from "./modules/progression/progression.module";
 import { SocialModule } from "./modules/social/social.module";
 import { UserModule } from "./modules/user/user.module";
-import { PrismaService } from "./prisma/prisma.service";
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
   imports: [
@@ -22,6 +22,7 @@ import { PrismaService } from "./prisma/prisma.service";
         limit: 30
       }
     ]),
+    PrismaModule,
     AuditModule,
     AuthModule,
     IngestionModule,
@@ -31,6 +32,6 @@ import { PrismaService } from "./prisma/prisma.service";
     ProgressionModule,
     SocialModule
   ],
-  providers: [PrismaService]
+  providers: []
 })
 export class AppModule {}
