@@ -81,23 +81,15 @@ export function GoogleLoginButton() {
   };
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div className="grid gap-4">
       <button
         onClick={handleQuickLogin}
-        style={{
-          border: "none",
-          borderRadius: 10,
-          padding: "12px 14px",
-          background: "var(--PrimaryBlue)",
-          color: "white",
-          fontWeight: 700,
-          cursor: "pointer"
-        }}
+        className="inline-flex items-center justify-center rounded-xl border border-blue-400/70 bg-blue-500/30 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:-translate-y-px hover:bg-blue-500/45"
       >
         Fazer Login com o Google
       </button>
-      {isCheckingSession ? <small style={{ color: "var(--TextSecondary)" }}>Verificando sessao...</small> : null}
-      {error ? <small style={{ color: "var(--Danger)" }}>{error}</small> : null}
+      {isCheckingSession ? <small className="text-slate-400">Verificando sessao...</small> : null}
+      {error ? <small className="text-red-400">{error}</small> : null}
     </div>
   );
 }

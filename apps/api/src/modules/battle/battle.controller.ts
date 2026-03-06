@@ -27,6 +27,11 @@ export class BattleController {
     return this.battleService.registerPresence(user.userId);
   }
 
+  @Get("ongoing")
+  async listOngoingBattles(@CurrentUser() user: AuthUser) {
+    return this.battleService.listOngoingBattles(user.userId);
+  }
+
   @Get("ai/opponents")
   async listAiOpponents() {
     return this.battleService.listAiOpponents();

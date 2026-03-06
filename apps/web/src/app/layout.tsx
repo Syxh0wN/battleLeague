@@ -14,7 +14,7 @@ type LayoutProps = {
 export default function RootLayout({ children }: LayoutProps) {
   return (
     <html lang="en">
-      <body>
+      <body className="m-0 min-h-screen bg-slate-950 font-sans text-slate-100 antialiased">
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

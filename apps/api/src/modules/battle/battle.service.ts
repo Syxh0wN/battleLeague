@@ -11,6 +11,7 @@ import { SubmitTurnDto } from "./dto/submit-turn.dto";
 export class BattleService {
   private readonly userPresence = new Map<string, number>();
   private readonly pvpScheduleMs = 60_000;
+  private readonly battleDurationMs = 300_000;
   private readonly presenceWindowMs = 90_000;
 
   constructor(
@@ -54,6 +55,112 @@ export class BattleService {
     }));
   }
 
+  async listOngoingBattles(userId: string) {
+    const now = new Date();
+    const battles = await this.prisma.battle.findMany({
+      where: {
+        status: { in: [BattleStatus.pending, BattleStatus.active] },
+        OR: [{ challengerId: userId }, { opponentId: userId }]
+      },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        challenger: true,
+        opponent: true,
+        challengerPokemon: { include: { species: true } },
+        opponentPokemon: { include: { species: true } },
+        turns: {
+          orderBy: { createdAt: "desc" },
+          take: 1
+        }
+      }
+    });
+
+    const visibleBattles: Array<{
+      id: string;
+      status: BattleStatus;
+      scheduledStartAt: Date;
+      currentTurnUserId: string;
+      isAiBattle: boolean;
+      challenger: { id: string; displayName: string };
+      opponent: { id: string; displayName: string };
+      challengerPokemon: { id: string; level: number; species: { name: string; imageUrl: string | null } };
+      opponentPokemon: { id: string; level: number; species: { name: string; imageUrl: string | null } };
+      lastTurn: { action: string; damage: number; actorUserId: string } | null;
+    }> = [];
+
+    for (const battle of battles) {
+      const isAiBattle = battle.opponent.googleSub.startsWith("ai_");
+      const effectiveExpiresAt = this.getEffectiveExpiresAt(battle.createdAt, battle.expiresAt);
+      const scheduledStartAt = this.getBattleStartAt(battle.createdAt);
+      if (battle.expiresAt.getTime() !== effectiveExpiresAt.getTime()) {
+        await this.prisma.battle.update({
+          where: { id: battle.id },
+          data: { expiresAt: effectiveExpiresAt }
+        });
+      }
+      if (battle.status === BattleStatus.pending && now.getTime() >= scheduledStartAt.getTime()) {
+        await this.prisma.battle.update({
+          where: { id: battle.id },
+          data: { status: BattleStatus.active }
+        });
+        battle.status = BattleStatus.active;
+      }
+      if (effectiveExpiresAt <= now) {
+        await this.prisma.battle.update({
+          where: { id: battle.id },
+          data: { status: BattleStatus.expired }
+        });
+        continue;
+      }
+      const lastTurn = battle.turns[0] ?? null;
+      const currentTurnUserId = this.getCurrentTurnUserId(
+        battle.challengerId,
+        battle.opponentId,
+        lastTurn ? [lastTurn] : []
+      );
+      visibleBattles.push({
+        id: battle.id,
+        status: battle.status,
+        scheduledStartAt,
+        currentTurnUserId,
+        isAiBattle,
+        challenger: {
+          id: battle.challenger.id,
+          displayName: battle.challenger.displayName
+        },
+        opponent: {
+          id: battle.opponent.id,
+          displayName: battle.opponent.displayName
+        },
+        challengerPokemon: {
+          id: battle.challengerPokemon.id,
+          level: battle.challengerPokemon.level,
+          species: {
+            name: battle.challengerPokemon.species.name,
+            imageUrl: battle.challengerPokemon.species.imageUrl
+          }
+        },
+        opponentPokemon: {
+          id: battle.opponentPokemon.id,
+          level: battle.opponentPokemon.level,
+          species: {
+            name: battle.opponentPokemon.species.name,
+            imageUrl: battle.opponentPokemon.species.imageUrl
+          }
+        },
+        lastTurn: lastTurn
+          ? {
+              action: lastTurn.action,
+              damage: lastTurn.damage,
+              actorUserId: lastTurn.actorUserId
+            }
+          : null
+      });
+    }
+
+    return visibleBattles;
+  }
+
   async listAiOpponents() {
     return [
       {
@@ -78,30 +185,40 @@ export class BattleService {
   }
 
   async createBattle(challengerId: string, dto: CreateBattleDto) {
-    const [challengerPokemon, opponentPokemon] = await Promise.all([
+    const now = new Date();
+    const [challengerPokemon, opponentUser] = await Promise.all([
       this.prisma.userPokemon.findFirst({
         where: { id: dto.challengerPokemonId, userId: challengerId },
         include: { species: true }
       }),
-      this.prisma.userPokemon.findFirst({
-        where: { id: dto.opponentPokemonId, userId: dto.opponentUserId },
-        include: { species: true }
+      this.prisma.user.findUnique({
+        where: { id: dto.opponentUserId },
+        include: {
+          pokemons: {
+            where: {
+              OR: [{ restCooldownUntil: null }, { restCooldownUntil: { lte: now } }]
+            },
+            include: { species: true },
+            orderBy: [{ level: "desc" }, { wins: "desc" }]
+          }
+        }
       })
     ]);
 
-    if (!challengerPokemon || !opponentPokemon) {
+    if (!challengerPokemon || !opponentUser) {
       throw new NotFoundException("battlePokemonNotFound");
     }
-    if (
-      (challengerPokemon.restCooldownUntil && challengerPokemon.restCooldownUntil > new Date()) ||
-      (opponentPokemon.restCooldownUntil && opponentPokemon.restCooldownUntil > new Date())
-    ) {
+    if (challengerPokemon.restCooldownUntil && challengerPokemon.restCooldownUntil > now) {
       throw new BadRequestException("pokemonInRestCooldown");
     }
+    if (opponentUser.pokemons.length === 0) {
+      throw new BadRequestException("opponentHasNoAvailablePokemon");
+    }
+    const randomIndex = Math.floor(Math.random() * opponentUser.pokemons.length);
+    const opponentPokemon = opponentUser.pokemons[randomIndex];
 
-    const scheduleInMinutes = dto.scheduleInMinutes ?? 1;
-    const scheduledStartAt = new Date(Date.now() + scheduleInMinutes * 60_000);
-    const expiresAt = new Date(scheduledStartAt.getTime() + 6 * 60 * 60 * 1000);
+    const scheduledStartAt = new Date(Date.now() + this.pvpScheduleMs);
+    const expiresAt = new Date(scheduledStartAt.getTime() + this.battleDurationMs);
 
     const battle = await this.prisma.battle.create({
       data: {
@@ -113,8 +230,8 @@ export class BattleService {
         expiresAt
       },
       include: {
-        challengerPokemon: true,
-        opponentPokemon: true
+        challengerPokemon: { include: { species: true } },
+        opponentPokemon: { include: { species: true } }
       }
     });
     await this.auditService.write({
@@ -122,11 +239,16 @@ export class BattleService {
       action: "BattleCreated",
       entityName: "Battle",
       entityId: battle.id,
-      payload: { opponentUserId: dto.opponentUserId, scheduledStartAt: scheduledStartAt.toISOString() }
+      payload: {
+        opponentUserId: dto.opponentUserId,
+        scheduledStartAt: scheduledStartAt.toISOString(),
+        roulettePokemonId: opponentPokemon.id
+      }
     });
     return {
       ...battle,
-      scheduledStartAt
+      scheduledStartAt,
+      roulettePokemonName: opponentPokemon.species.name
     };
   }
 
@@ -149,12 +271,12 @@ export class BattleService {
         opponentId: aiSetup.aiUser.id,
         challengerPokemonId: challengerPokemon.id,
         opponentPokemonId: aiSetup.aiPokemon.id,
-        status: BattleStatus.active,
-        expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000)
+        status: BattleStatus.pending,
+        expiresAt: new Date(Date.now() + this.pvpScheduleMs + this.battleDurationMs)
       },
       include: {
-        challengerPokemon: true,
-        opponentPokemon: true,
+        challengerPokemon: { include: { species: true } },
+        opponentPokemon: { include: { species: true } },
         opponent: true
       }
     });
@@ -167,7 +289,10 @@ export class BattleService {
       payload: { difficulty: dto.difficulty }
     });
 
-    return battle;
+    return {
+      ...battle,
+      scheduledStartAt: new Date(Date.now() + this.pvpScheduleMs)
+    };
   }
 
   async submitTurn(userId: string, battleId: string, dto: SubmitTurnDto) {
@@ -175,15 +300,15 @@ export class BattleService {
       where: { id: battleId },
       include: {
         opponent: true,
-        challengerPokemon: true,
-        opponentPokemon: true,
+        challengerPokemon: { include: { species: true } },
+        opponentPokemon: { include: { species: true } },
         turns: { orderBy: { createdAt: "asc" } }
       }
     });
     if (!battle) {
       throw new NotFoundException("battleNotFound");
     }
-    const scheduledStartAt = new Date(battle.createdAt.getTime() + this.pvpScheduleMs);
+    const scheduledStartAt = this.getBattleStartAt(battle.createdAt);
     if (battle.status === BattleStatus.pending) {
       if (Date.now() < scheduledStartAt.getTime()) {
         throw new BadRequestException("battleNotStartedYet");
@@ -197,7 +322,16 @@ export class BattleService {
     if (battle.status !== BattleStatus.active) {
       throw new BadRequestException("battleIsNotActive");
     }
-    if (battle.expiresAt < new Date()) {
+    const isAiBattle = battle.opponent.googleSub.startsWith("ai_");
+    const effectiveExpiresAt = this.getEffectiveExpiresAt(battle.createdAt, battle.expiresAt);
+    if (battle.expiresAt.getTime() !== effectiveExpiresAt.getTime()) {
+      await this.prisma.battle.update({
+        where: { id: battleId },
+        data: { expiresAt: effectiveExpiresAt }
+      });
+      battle.expiresAt = effectiveExpiresAt;
+    }
+    if (effectiveExpiresAt < new Date()) {
       await this.prisma.battle.update({
         where: { id: battleId },
         data: { status: BattleStatus.expired }
@@ -224,20 +358,31 @@ export class BattleService {
       };
     }
 
+    const expectedTurnUserId = this.getCurrentTurnUserId(battle.challengerId, battle.opponentId, battle.turns);
+    if (expectedTurnUserId !== userId) {
+      throw new BadRequestException("notYourTurn");
+    }
+
     const actor = userId === battle.challengerId ? "challenger" : "opponent";
     const challengerState = {
       currentHp: battle.turns.length > 0 ? battle.turns[battle.turns.length - 1].challengerHp : battle.challengerPokemon.currentHp,
       maxHp: battle.challengerPokemon.currentHp,
       atk: battle.challengerPokemon.atk,
       def: battle.challengerPokemon.def,
-      speed: battle.challengerPokemon.speed
+      speed: battle.challengerPokemon.speed,
+      level: battle.challengerPokemon.level,
+      typePrimary: battle.challengerPokemon.species.typePrimary,
+      typeSecondary: battle.challengerPokemon.species.typeSecondary
     };
     const opponentState = {
       currentHp: battle.turns.length > 0 ? battle.turns[battle.turns.length - 1].opponentHp : battle.opponentPokemon.currentHp,
       maxHp: battle.opponentPokemon.currentHp,
       atk: battle.opponentPokemon.atk,
       def: battle.opponentPokemon.def,
-      speed: battle.opponentPokemon.speed
+      speed: battle.opponentPokemon.speed,
+      level: battle.opponentPokemon.level,
+      typePrimary: battle.opponentPokemon.species.typePrimary,
+      typeSecondary: battle.opponentPokemon.species.typeSecondary
     };
 
     const result = resolveTurn(challengerState, opponentState, dto.action, actor);
@@ -264,7 +409,6 @@ export class BattleService {
       | null = null;
     let finalResult = result;
 
-    const isAiBattle = battle.opponent.googleSub.startsWith("ai_");
     const isOfflineOpponentProxy = !isAiBattle && !this.isUserOnline(battle.opponentId);
     const playerIsChallenger = userId === battle.challengerId;
     if ((isAiBattle || isOfflineOpponentProxy) && playerIsChallenger && !result.winner) {
@@ -274,14 +418,20 @@ export class BattleService {
         maxHp: battle.challengerPokemon.currentHp,
         atk: battle.challengerPokemon.atk,
         def: battle.challengerPokemon.def,
-        speed: battle.challengerPokemon.speed
+        speed: battle.challengerPokemon.speed,
+        level: battle.challengerPokemon.level,
+        typePrimary: battle.challengerPokemon.species.typePrimary,
+        typeSecondary: battle.challengerPokemon.species.typeSecondary
       };
       const aiOpponentState = {
         currentHp: result.opponentHp,
         maxHp: battle.opponentPokemon.currentHp,
         atk: battle.opponentPokemon.atk,
         def: battle.opponentPokemon.def,
-        speed: battle.opponentPokemon.speed
+        speed: battle.opponentPokemon.speed,
+        level: battle.opponentPokemon.level,
+        typePrimary: battle.opponentPokemon.species.typePrimary,
+        typeSecondary: battle.opponentPokemon.species.typeSecondary
       };
       const aiResult = resolveTurn(aiChallengerState, aiOpponentState, aiAction, "opponent");
       const createdAiTurn = await this.prisma.battleTurn.create({
@@ -349,7 +499,23 @@ export class BattleService {
     if (battle.challengerId !== userId && battle.opponentId !== userId) {
       throw new ForbiddenException("battleAccessDenied");
     }
-    const scheduledStartAt = new Date(battle.createdAt.getTime() + this.pvpScheduleMs);
+    const isAiBattle = battle.opponent.googleSub.startsWith("ai_");
+    const effectiveExpiresAt = this.getEffectiveExpiresAt(battle.createdAt, battle.expiresAt);
+    if (battle.expiresAt.getTime() !== effectiveExpiresAt.getTime()) {
+      await this.prisma.battle.update({
+        where: { id: battle.id },
+        data: { expiresAt: effectiveExpiresAt }
+      });
+      battle.expiresAt = effectiveExpiresAt;
+    }
+    if (battle.status !== BattleStatus.finished && battle.status !== BattleStatus.expired && effectiveExpiresAt < new Date()) {
+      await this.prisma.battle.update({
+        where: { id: battle.id },
+        data: { status: BattleStatus.expired }
+      });
+      battle.status = BattleStatus.expired;
+    }
+    const scheduledStartAt = this.getBattleStartAt(battle.createdAt);
     if (battle.status === BattleStatus.pending && Date.now() >= scheduledStartAt.getTime()) {
       await this.prisma.battle.update({
         where: { id: battle.id },
@@ -359,7 +525,9 @@ export class BattleService {
     }
     return {
       ...battle,
+      currentTurnUserId: this.getCurrentTurnUserId(battle.challengerId, battle.opponentId, battle.turns),
       scheduledStartAt,
+      expiresAt: effectiveExpiresAt,
       fallbackAiForOfflineOpponent: !battle.opponent.googleSub.startsWith("ai_")
     };
   }
@@ -614,5 +782,31 @@ export class BattleService {
       return false;
     }
     return Date.now() - lastSeen <= this.presenceWindowMs;
+  }
+
+  private getBattleStartAt(createdAt: Date): Date {
+    return new Date(createdAt.getTime() + this.pvpScheduleMs);
+  }
+
+  private getBattleExpiresAt(createdAt: Date): Date {
+    const startsAt = this.getBattleStartAt(createdAt);
+    return new Date(startsAt.getTime() + this.battleDurationMs);
+  }
+
+  private getEffectiveExpiresAt(createdAt: Date, storedExpiresAt: Date): Date {
+    const capExpiresAt = this.getBattleExpiresAt(createdAt);
+    return storedExpiresAt.getTime() > capExpiresAt.getTime() ? capExpiresAt : storedExpiresAt;
+  }
+
+  private getCurrentTurnUserId(
+    challengerId: string,
+    opponentId: string,
+    turns: Array<{ actorUserId: string }>
+  ): string {
+    if (turns.length === 0) {
+      return challengerId;
+    }
+    const lastActorUserId = turns[turns.length - 1].actorUserId;
+    return lastActorUserId === challengerId ? opponentId : challengerId;
   }
 }

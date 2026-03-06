@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsNotEmpty, IsString } from "class-validator";
 
 export class CreateBattleDto {
   @IsString()
@@ -8,14 +8,4 @@ export class CreateBattleDto {
   @IsString()
   @IsNotEmpty()
   challengerPokemonId!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  opponentPokemonId!: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(30)
-  scheduleInMinutes?: number;
 }

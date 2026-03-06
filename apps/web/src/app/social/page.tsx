@@ -60,30 +60,37 @@ export default function SocialPage() {
   }
 
   return (
-    <main style={{ padding: 24, display: "grid", gap: 16 }}>
-      <h1 style={{ margin: 0 }}>Social</h1>
-      <form onSubmit={HandleSend} style={{ display: "flex", gap: 8 }}>
-        <input value={targetUserId} onChange={(event) => setTargetUserId(event.target.value)} placeholder="TargetUserId" />
-        <button type="submit">AddFriend</button>
+    <main className="grid min-h-screen gap-4 p-3 sm:p-4 lg:p-6">
+      <h1 className="m-0 text-3xl font-bold">Social</h1>
+      <form onSubmit={HandleSend} className="flex flex-wrap gap-2">
+        <input
+          value={targetUserId}
+          onChange={(event) => setTargetUserId(event.target.value)}
+          placeholder="Id do treinador"
+          className="min-w-[220px] flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none ring-blue-400/40 focus:ring"
+        />
+        <button type="submit" className="rounded-xl border border-blue-400/70 bg-blue-500/25 px-4 py-2 text-sm font-semibold">
+          Adicionar amigo
+        </button>
       </form>
 
-      <section style={{ display: "grid", gap: 8 }}>
-        <h2 style={{ margin: 0 }}>Pending</h2>
+      <section className="grid gap-2 rounded-2xl border border-slate-700/80 bg-slate-900/80 p-3 sm:p-4">
+        <h2 className="m-0 text-xl font-semibold">Solicitacoes pendentes</h2>
         {pendingQuery.data?.map((pending) => (
-          <article key={pending.id} style={{ background: "var(--SurfaceDark)", padding: 10, borderRadius: 8 }}>
+          <article key={pending.id} className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-900/80 p-3">
             <span>{pending.sender.displayName}</span>
-            <button style={{ marginLeft: 10 }} onClick={() => acceptMutation.mutate(pending.id)}>
-              Accept
+            <button className="rounded-lg border border-emerald-400/70 bg-emerald-500/20 px-3 py-1 text-xs font-semibold" onClick={() => acceptMutation.mutate(pending.id)}>
+              Aceitar
             </button>
           </article>
         ))}
       </section>
 
-      <section style={{ display: "grid", gap: 8 }}>
-        <h2 style={{ margin: 0 }}>Friends</h2>
+      <section className="grid gap-2 rounded-2xl border border-slate-700/80 bg-slate-900/80 p-3 sm:p-4">
+        <h2 className="m-0 text-xl font-semibold">Amigos</h2>
         {friendsQuery.data?.map((friend) => (
-          <article key={friend.id} style={{ background: "var(--SurfaceDark)", padding: 10, borderRadius: 8 }}>
-            {friend.displayName} Level {friend.level}
+          <article key={friend.id} className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+            {friend.displayName} Nivel {friend.level}
           </article>
         ))}
       </section>
