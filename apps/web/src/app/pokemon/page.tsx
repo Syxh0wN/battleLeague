@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { ApiFetch } from "../../lib/api";
 
 type UserPokemon = {
@@ -61,6 +62,18 @@ export default function PokemonPage() {
           <span>Historico de performance</span>
         </div>
       </section>
+
+      <nav className="PageQuickNav">
+        <Link className="PageQuickNavLink" href="/dashboard">
+          Voltar para Dashboard
+        </Link>
+        <Link className="PageQuickNavLink" href="/battles">
+          Ir para Battles
+        </Link>
+        <Link className="PageQuickNavLink" href="/social">
+          Ir para Social
+        </Link>
+      </nav>
 
       {myPokemons.length > 0 ? (
         <section className="PokemonSection">

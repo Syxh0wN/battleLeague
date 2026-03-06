@@ -358,6 +358,21 @@ nextjs-portal {
   gap: 16px;
 }
 
+.PageQuickNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.PageQuickNavLink {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--PrimaryBlue) 35%, transparent);
+  background: color-mix(in srgb, var(--PrimaryBlue) 10%, transparent);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .PokemonHero {
   border-radius: 18px;
   padding: 18px;
