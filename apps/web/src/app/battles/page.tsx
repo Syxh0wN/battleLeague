@@ -61,7 +61,8 @@ export default function BattlesPage() {
   const [opponentUserId, setOpponentUserId] = useState("");
   const [challengerPokemonId, setChallengerPokemonId] = useState("");
   const [opponentPokemonId, setOpponentPokemonId] = useState("");
-  const [createdBattleId, setCreatedBattleId] = useState("");
+  const [createdPvpBattleId, setCreatedPvpBattleId] = useState("");
+  const [createdAiBattleId, setCreatedAiBattleId] = useState("");
   const [isCreatingBattle, setIsCreatingBattle] = useState(false);
   const [battleError, setBattleError] = useState("");
   const [selectedAiDifficulty, setSelectedAiDifficulty] = useState<"easy" | "normal" | "hard">("normal");
@@ -107,7 +108,8 @@ export default function BattlesPage() {
           opponentPokemonId
         })
       });
-      setCreatedBattleId(response.id);
+      setCreatedPvpBattleId(response.id);
+      setCreatedAiBattleId("");
     } catch {
       setBattleError("Nao foi possivel criar a batalha. Verifique os IDs e tente novamente.");
     } finally {
@@ -130,7 +132,8 @@ export default function BattlesPage() {
           difficulty: selectedAiDifficulty
         })
       });
-      setCreatedBattleId(response.id);
+      setCreatedAiBattleId(response.id);
+      setCreatedPvpBattleId("");
     } catch {
       setBattleError("Nao foi possivel criar duelo com IA.");
     } finally {
@@ -172,8 +175,8 @@ export default function BattlesPage() {
 
       <section className="BattlesSection">
         <div className="BattlesSectionHeader">
-          <h2>Criar novo duelo</h2>
-          <small>Preencha os IDs para montar o confronto.</small>
+          <h2>Duelos com jogadores</h2>
+          <small>Selecione amigo, pokemons e crie seu confronto PvP.</small>
         </div>
 
         <div className="BattleSuggestWrap">
@@ -271,11 +274,23 @@ export default function BattlesPage() {
           </button>
         </form>
 
+        {createdPvpBattleId ? (
+          <article className="BattleCreatedCard">
+            <strong>Batalha PvP criada com sucesso</strong>
+            <small>ID: {createdPvpBattleId}</small>
+          </article>
+        ) : null}
+
+        {battleError ? <div className="BattleErrorBox">{battleError}</div> : null}
+      </section>
+
+      <section className="BattlesSection">
+        <div className="BattlesSectionHeader">
+          <h2>Duelos com IA</h2>
+          <small>Escolha a dificuldade e enfrente um oponente controlado por IA.</small>
+        </div>
+
         <div className="BattleAiWrap">
-          <div className="BattlesSectionHeader">
-            <h2>Desafiar IA</h2>
-            <small>Escolha dificuldade e crie duelo automatico.</small>
-          </div>
           <div className="BattleAiGrid">
             {aiOpponents.length === 0 ? (
               <div className="BattleTinyNote">Sem perfis de IA disponiveis.</div>
@@ -299,14 +314,12 @@ export default function BattlesPage() {
           </button>
         </div>
 
-        {createdBattleId ? (
+        {createdAiBattleId ? (
           <article className="BattleCreatedCard">
-            <strong>Batalha criada com sucesso</strong>
-            <small>ID: {createdBattleId}</small>
+            <strong>Batalha IA criada com sucesso</strong>
+            <small>ID: {createdAiBattleId}</small>
           </article>
         ) : null}
-
-        {battleError ? <div className="BattleErrorBox">{battleError}</div> : null}
       </section>
     </main>
   );
