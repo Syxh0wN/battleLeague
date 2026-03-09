@@ -6,6 +6,7 @@ const AllowedProxyPrefixes = [
   "auth/local-auto",
   "auth/refresh",
   "users/",
+  "battles",
   "pokemon/",
   "battles/",
   "progression/",
