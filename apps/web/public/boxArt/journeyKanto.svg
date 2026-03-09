@@ -19,7 +19,7 @@
 <circle cx="600" cy="448" r="126" fill="#111827" fill-opacity="0.5" stroke="#FDE68A" stroke-opacity="0.45" stroke-width="18"/>
 <circle cx="600" cy="448" r="42" fill="#FDE68A" fill-opacity="0.85"/>
 <text x="86" y="138" fill="#FDE68A" font-family="Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="8">POKEMON BOX</text>
-<text x="86" y="270" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="112" font-weight="800">Jornada Kanto</text>
+<text x="86" y="270" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="112" font-weight="800">Jornada BattleLeague</text>
 <text x="90" y="334" fill="#FDE68A" font-family="Arial, sans-serif" font-size="34" font-weight="600">Fogo, terra e o primeiro passo da aventura</text>
 <text x="90" y="690" fill="#FFFFFF" fill-opacity="0.75" font-family="Arial, sans-serif" font-size="30" font-weight="700">Box Fiesta</text>
 </svg>

@@ -8,6 +8,39 @@ type LoginResponse = {
   accessToken: string;
 };
 
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+type GoogleAccountsId = {
+  initialize: (options: {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+    auto_select?: boolean;
+    cancel_on_tap_outside?: boolean;
+  }) => void;
+  renderButton: (
+    parent: HTMLElement,
+    options: {
+      theme?: "outline" | "filled_blue" | "filled_black";
+      size?: "large" | "medium" | "small";
+      shape?: "rectangular" | "pill" | "circle" | "square";
+      width?: number;
+      text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+    }
+  ) => void;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: GoogleAccountsId;
+      };
+    };
+  }
+}
+
 function ResolveApiUrl() {
   if (typeof window !== "undefined") {
     return "/api-proxy";
@@ -19,64 +52,122 @@ function ResolveApiUrl() {
 }
 
 export function GoogleLoginButton() {
-  const BuildLocalProfileLabel = (profile: "a" | "b") => {
-    return profile === "a" ? "principal" : "secundario";
-  };
-
   const router = useRouter();
   const { addToast } = useToast();
   const [error, setError] = useState("");
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [isGoogleRendered, setIsGoogleRendered] = useState(false);
 
-  const detectLocalProfile = (): "a" | "b" => {
-    if (typeof window === "undefined") {
-      return "a";
-    }
-    const hostName = window.location.hostname.toLowerCase();
-    if (hostName === "localhost" || hostName === "127.0.0.1") {
-      return "a";
-    }
-    if (hostName.startsWith("192.168.")) {
-      return "b";
-    }
-    return "a";
-  };
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
-  const doLocalAutoLogin = async (profile: "a" | "b") => {
+  const LoginWithGoogleCredential = async (idToken: string) => {
     const apiUrl = ResolveApiUrl();
-    const response = await fetch(`${apiUrl}/auth/local-auto?profile=${profile}`, {
+    const response = await fetch(`${apiUrl}/auth/google`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json"
-      }
+      },
+      body: JSON.stringify({ idToken })
     });
     if (!response.ok) {
-      throw new Error("Falha no login local");
+      throw new Error("Falha no login Google");
     }
     const data = (await response.json()) as Partial<LoginResponse>;
     if (!data.accessToken) {
       throw new Error("Resposta invalida do servidor");
     }
     localStorage.setItem("AccessToken", data.accessToken);
-    localStorage.setItem("BattleLeagueLocalProfile", profile);
     addToast({
       title: "Login realizado",
-      message: `Perfil local ${BuildLocalProfileLabel(profile)} conectado.`,
+      message: "Conta Google conectada com sucesso.",
       tone: "success"
     });
     router.replace("/dashboard");
   };
 
+  const RenderGoogleButton = () => {
+    if (typeof window === "undefined" || !window.google || !googleClientId) {
+      return;
+    }
+    const buttonElement = document.getElementById("GoogleSignInButton");
+    if (!buttonElement || isGoogleRendered) {
+      return;
+    }
+    buttonElement.innerHTML = "";
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      callback: (response) => {
+        const credential = response.credential;
+        if (!credential) {
+          setError("Falha ao receber token da conta Google.");
+          return;
+        }
+        setError("");
+        setIsSubmitting(true);
+        void LoginWithGoogleCredential(credential)
+          .catch((loginError) => {
+            const message = loginError instanceof Error ? loginError.message : "Falha no login Google";
+            setError(message);
+            addToast({ title: "Falha no login", message, tone: "error" });
+          })
+          .finally(() => {
+            setIsSubmitting(false);
+          });
+      }
+    });
+    window.google.accounts.id.renderButton(buttonElement, {
+      theme: "outline",
+      size: "large",
+      shape: "pill",
+      text: "continue_with",
+      width: 320
+    });
+    setIsGoogleRendered(true);
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!googleClientId) {
+      setError("NEXT_PUBLIC_GOOGLE_CLIENT_ID nao configurado.");
+      setIsCheckingSession(false);
+      return;
+    }
+    const existingScript = document.getElementById("GoogleIdentityScript");
+    if (existingScript) {
+      setIsGoogleReady(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "GoogleIdentityScript";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      setIsGoogleReady(true);
+    };
+    script.onerror = () => {
+      setError("Nao foi possivel carregar login Google.");
+      setIsCheckingSession(false);
+    };
+    document.head.appendChild(script);
+  }, [googleClientId]);
+
+  useEffect(() => {
+    if (!isGoogleReady) {
+      return;
+    }
+    RenderGoogleButton();
+  }, [isGoogleReady, isGoogleRendered]);
+
   useEffect(() => {
     const tryRestoreSession = async (): Promise<boolean> => {
-      const expectedProfile = detectLocalProfile();
-      const currentProfile = localStorage.getItem("BattleLeagueLocalProfile");
-      if (currentProfile && currentProfile !== expectedProfile) {
-        localStorage.removeItem("AccessToken");
-        return false;
-      }
       const apiUrl = ResolveApiUrl();
       try {
         const response = await fetch(`${apiUrl}/auth/refresh`, {
@@ -96,7 +187,6 @@ export function GoogleLoginButton() {
           return false;
         }
         localStorage.setItem("AccessToken", data.accessToken);
-        localStorage.setItem("BattleLeagueLocalProfile", expectedProfile);
         router.replace("/dashboard");
         return true;
       } catch {
@@ -107,21 +197,11 @@ export function GoogleLoginButton() {
 
     const bootstrapAuth = async () => {
       setError("");
-      setIsSubmitting(true);
       const restored = await tryRestoreSession();
       if (restored) {
         return;
       }
-      try {
-        await doLocalAutoLogin(detectLocalProfile());
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Falha no login local";
-        setError(message);
-        addToast({ title: "Falha no login", message, tone: "error" });
-        setIsCheckingSession(false);
-      } finally {
-        setIsSubmitting(false);
-      }
+      setIsCheckingSession(false);
     };
 
     void bootstrapAuth();
@@ -129,27 +209,8 @@ export function GoogleLoginButton() {
 
   return (
     <div className="grid gap-4">
-      <button
-        type="button"
-        onClick={() => {
-          setError("");
-          setIsSubmitting(true);
-          void doLocalAutoLogin(detectLocalProfile())
-            .catch((err) => {
-              const message = err instanceof Error ? err.message : "Falha no login local";
-              setError(message);
-              addToast({ title: "Falha no login", message, tone: "error" });
-            })
-            .finally(() => {
-              setIsSubmitting(false);
-            });
-        }}
-        disabled={isSubmitting}
-        className="inline-flex items-center justify-center gap-3 rounded-xl border border-slate-700 bg-slate-800/35 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:border-blue-400/60 hover:bg-slate-800/60 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <span>{isSubmitting ? "Entrando..." : "Entrar no perfil local"}</span>
-      </button>
-      <small className="text-slate-400">Login com Google desativado no momento.</small>
+      <div id="GoogleSignInButton" className="min-h-[44px]" />
+      {isSubmitting ? <small className="text-slate-400">Entrando com Google...</small> : null}
       {isCheckingSession ? <small className="text-slate-400">Verificando sessao...</small> : null}
       {error ? <small className="text-red-400">{error}</small> : null}
     </div>

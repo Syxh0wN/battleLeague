@@ -53,7 +53,7 @@ export class ProgressionService {
   private readonly lootBoxCatalog: LootBoxCatalogItem[] = [
     {
       boxType: "fiesta",
-      displayName: "Jornada Kanto",
+      displayName: "Jornada BattleLeague",
       category: "specials",
       priceCoins: 40,
       imageUrl: "/boxArt/journeyKanto.svg",
@@ -133,7 +133,7 @@ export class ProgressionService {
     },
     {
       boxType: "jaina",
-      displayName: "Elite Kanto",
+      displayName: "Elite BattleLeague",
       category: "holo",
       priceCoins: 520,
       imageUrl: "/boxArt/eliteKanto.svg",
@@ -1187,7 +1187,7 @@ export class ProgressionService {
     }
     return {
       boxType: "fiesta",
-      displayName: "Inicio Kanto",
+      displayName: "Inicio BattleLeague",
       category: "specials",
       priceCoins: 40,
       imageUrl: "https://key-drop.com/uploads/skins/FIESTA.png",

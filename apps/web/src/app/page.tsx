@@ -13,7 +13,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="grid gap-1">
-            <span className="text-[11px] font-semibold tracking-[0.1em] text-slate-400">KANTO LEAGUE</span>
+            <span className="text-[11px] font-semibold tracking-[0.1em] text-slate-400">BATTLELEAGUE</span>
             <small className="text-slate-400">Acesso rapido do perfil</small>
           </div>
         </div>
