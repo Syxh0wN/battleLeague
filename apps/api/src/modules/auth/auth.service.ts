@@ -18,6 +18,7 @@ type AuthResponse = {
 };
 
 const GoogleDefaultAvatarUrl = "https://www.gstatic.com/images/branding/product/1x/avatar_circle_blue_512dp.png";
+const NewUserInitialCoins = 1000;
 
 @Injectable()
 export class AuthService {
@@ -57,6 +58,7 @@ export class AuthService {
         email,
         displayName,
         accountTag: preferredAccountTag,
+        coins: NewUserInitialCoins,
         avatarUrl: payload.picture ?? null,
         profileHistory: {
           create: {
@@ -118,6 +120,7 @@ export class AuthService {
         email: localEmail,
         displayName: localDisplayName,
         accountTag: localAccountTag,
+        coins: NewUserInitialCoins,
         avatarUrl: localAvatarUrl,
         profileHistory: {
           create: {

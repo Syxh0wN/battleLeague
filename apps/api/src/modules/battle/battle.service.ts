@@ -9,6 +9,7 @@ import { SubmitTurnDto } from "./dto/submit-turn.dto";
 
 @Injectable()
 export class BattleService {
+  private readonly newUserInitialCoins = 1000;
   private readonly userPresence = new Map<string, number>();
   private readonly pvpScheduleMs = 60_000;
   private readonly battleDurationMs = 300_000;
@@ -1211,6 +1212,7 @@ export class BattleService {
         googleSub: aiGoogleSub,
         email: `${aiGoogleSub}@battleleague.local`,
         displayName: aiDisplayName,
+        coins: this.newUserInitialCoins,
         profileHistory: {
           create: {
             battleCount: 0,
@@ -1358,6 +1360,7 @@ export class BattleService {
           email: demo.email,
           displayName: demo.displayName,
           avatarUrl: demo.avatarUrl,
+          coins: this.newUserInitialCoins,
           level: demo.level,
           totalWins: demo.wins,
           totalLosses: demo.losses,
