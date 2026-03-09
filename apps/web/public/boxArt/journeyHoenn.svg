@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+<defs>
+<linearGradient id="bg" x1="100" y1="72" x2="1120" y2="728" gradientUnits="userSpaceOnUse">
+<stop stop-color="#052E16"/>
+<stop offset="0.52" stop-color="#14532D"/>
+<stop offset="1" stop-color="#0F766E"/>
+</linearGradient>
+<radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(930 170) rotate(140) scale(420 320)">
+<stop stop-color="#86EFAC" stop-opacity="0.84"/>
+<stop offset="1" stop-color="#86EFAC" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<rect width="1200" height="800" rx="44" fill="url(#bg)"/>
+<rect x="28" y="28" width="1144" height="744" rx="32" stroke="#6EE7B7" stroke-opacity="0.3" stroke-width="2"/>
+<circle cx="930" cy="170" r="250" fill="url(#glow)"/>
+<circle cx="1010" cy="460" r="220" fill="#22C55E" fill-opacity="0.12"/>
+<circle cx="220" cy="610" r="190" fill="#14B8A6" fill-opacity="0.09"/>
+<path d="M0 436H1200" stroke="#A7F3D0" stroke-opacity="0.24" stroke-width="18"/>
+<circle cx="600" cy="436" r="122" fill="#022C22" fill-opacity="0.58" stroke="#A7F3D0" stroke-opacity="0.4" stroke-width="18"/>
+<circle cx="600" cy="436" r="40" fill="#6EE7B7" fill-opacity="0.85"/>
+<text x="86" y="138" fill="#A7F3D0" font-family="Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="8">POKEMON BOX</text>
+<text x="86" y="270" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="112" font-weight="800">Jornada Hoenn</text>
+<text x="90" y="334" fill="#A7F3D0" font-family="Arial, sans-serif" font-size="34" font-weight="600">Rotas tropicais, mar aberto e energia selvagem</text>
+<text x="90" y="690" fill="#FFFFFF" fill-opacity="0.75" font-family="Arial, sans-serif" font-size="30" font-weight="700">Box Corrida</text>
+</svg>

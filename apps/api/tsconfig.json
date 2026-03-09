@@ -3,6 +3,14 @@
   "compilerOptions": {
     "outDir": "./dist",
     "baseUrl": "./",
+    "paths": {
+      "@battleleague/game-engine": [
+        "../../packages/game-engine/src"
+      ],
+      "@battleleague/shared-types": [
+        "../../packages/shared-types/src"
+      ]
+    },
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },

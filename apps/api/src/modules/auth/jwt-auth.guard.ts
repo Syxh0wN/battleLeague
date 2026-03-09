@@ -14,9 +14,14 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = this.jwtService.verify<{ sub: string; email: string }>(token, {
-      secret: process.env.JWT_ACCESS_SECRET
-    });
+    let payload: { sub: string; email: string };
+    try {
+      payload = this.jwtService.verify<{ sub: string; email: string }>(token, {
+        secret: process.env.JWT_ACCESS_SECRET
+      });
+    } catch {
+      throw new UnauthorizedException("invalidAccessToken");
+    }
     request.user = {
       userId: payload.sub,
       email: payload.email

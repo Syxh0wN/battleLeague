@@ -1,5 +1,5 @@
 {
-  "name": "pokemonDuelMonorepo",
+  "name": "battleLeagueMonorepo",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace @duelmen/api",
-    "dev:web": "npm run dev --workspace @duelmen/web",
-    "dev:api": "npm run dev --workspace @duelmen/api",
+    "dev": "npm run dev --workspace @battleleague/api",
+    "dev:web": "npm run dev --workspace @battleleague/web",
+    "dev:api": "npm run dev --workspace @battleleague/api",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces"
   }

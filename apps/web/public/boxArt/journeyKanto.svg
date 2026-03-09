@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+<defs>
+<linearGradient id="bg" x1="120" y1="80" x2="1080" y2="720" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1F2937"/>
+<stop offset="0.55" stop-color="#7F1D1D"/>
+<stop offset="1" stop-color="#F59E0B"/>
+</linearGradient>
+<radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(920 180) rotate(140) scale(420 320)">
+<stop stop-color="#FCA5A5" stop-opacity="0.85"/>
+<stop offset="1" stop-color="#FCA5A5" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<rect width="1200" height="800" rx="44" fill="url(#bg)"/>
+<rect x="28" y="28" width="1144" height="744" rx="32" stroke="#FCA5A5" stroke-opacity="0.28" stroke-width="2"/>
+<circle cx="905" cy="190" r="250" fill="url(#glow)"/>
+<circle cx="960" cy="430" r="210" fill="#F97316" fill-opacity="0.12"/>
+<circle cx="250" cy="610" r="170" fill="#FDE68A" fill-opacity="0.08"/>
+<path d="M0 448H1200" stroke="#FDE68A" stroke-opacity="0.28" stroke-width="18"/>
+<circle cx="600" cy="448" r="126" fill="#111827" fill-opacity="0.5" stroke="#FDE68A" stroke-opacity="0.45" stroke-width="18"/>
+<circle cx="600" cy="448" r="42" fill="#FDE68A" fill-opacity="0.85"/>
+<text x="86" y="138" fill="#FDE68A" font-family="Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="8">POKEMON BOX</text>
+<text x="86" y="270" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="112" font-weight="800">Jornada Kanto</text>
+<text x="90" y="334" fill="#FDE68A" font-family="Arial, sans-serif" font-size="34" font-weight="600">Fogo, terra e o primeiro passo da aventura</text>
+<text x="90" y="690" fill="#FFFFFF" fill-opacity="0.75" font-family="Arial, sans-serif" font-size="30" font-weight="700">Box Fiesta</text>
+</svg>

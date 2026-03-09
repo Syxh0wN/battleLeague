@@ -22,6 +22,11 @@ export class BattleController {
     return this.battleService.listBattleSuggestions(user.userId);
   }
 
+  @Get("friends/suggestions")
+  async listFriendBattleSuggestions(@CurrentUser() user: AuthUser) {
+    return this.battleService.listFriendBattleSuggestions(user.userId);
+  }
+
   @Post("presence")
   async registerPresence(@CurrentUser() user: AuthUser) {
     return this.battleService.registerPresence(user.userId);
@@ -32,6 +37,11 @@ export class BattleController {
     return this.battleService.listOngoingBattles(user.userId);
   }
 
+  @Get("summary")
+  async getBattleSummary(@CurrentUser() user: AuthUser) {
+    return this.battleService.getBattleSummary(user.userId);
+  }
+
   @Get("ai/opponents")
   async listAiOpponents() {
     return this.battleService.listAiOpponents();
@@ -40,6 +50,11 @@ export class BattleController {
   @Post("ai")
   async createAiBattle(@CurrentUser() user: AuthUser, @Body() dto: CreateAiBattleDto) {
     return this.battleService.createAiBattle(user.userId, dto);
+  }
+
+  @Post("friends")
+  async createFriendBattle(@CurrentUser() user: AuthUser, @Body() dto: CreateBattleDto) {
+    return this.battleService.createFriendBattle(user.userId, dto);
   }
 
   @Post(":battleId/turn")

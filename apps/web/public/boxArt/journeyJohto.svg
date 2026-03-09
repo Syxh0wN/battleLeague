@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+<defs>
+<linearGradient id="bg" x1="96" y1="96" x2="1104" y2="704" gradientUnits="userSpaceOnUse">
+<stop stop-color="#111827"/>
+<stop offset="0.48" stop-color="#374151"/>
+<stop offset="1" stop-color="#FBBF24"/>
+</linearGradient>
+<radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(930 170) rotate(140) scale(390 310)">
+<stop stop-color="#FDE68A" stop-opacity="0.82"/>
+<stop offset="1" stop-color="#FDE68A" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<rect width="1200" height="800" rx="44" fill="url(#bg)"/>
+<rect x="28" y="28" width="1144" height="744" rx="32" stroke="#FDE68A" stroke-opacity="0.28" stroke-width="2"/>
+<circle cx="925" cy="180" r="240" fill="url(#glow)"/>
+<circle cx="210" cy="620" r="170" fill="#FFFFFF" fill-opacity="0.06"/>
+<circle cx="980" cy="430" r="210" fill="#FBBF24" fill-opacity="0.14"/>
+<path d="M0 432H1200" stroke="#F3F4F6" stroke-opacity="0.24" stroke-width="18"/>
+<circle cx="600" cy="432" r="122" fill="#111827" fill-opacity="0.54" stroke="#F3F4F6" stroke-opacity="0.42" stroke-width="18"/>
+<circle cx="600" cy="432" r="40" fill="#FDE68A" fill-opacity="0.85"/>
+<text x="86" y="138" fill="#F3F4F6" font-family="Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="8">POKEMON BOX</text>
+<text x="86" y="270" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="112" font-weight="800">Jornada Johto</text>
+<text x="90" y="334" fill="#FDE68A" font-family="Arial, sans-serif" font-size="34" font-weight="600">Tradicao, torres antigas e batalhas classicas</text>
+<text x="90" y="690" fill="#FFFFFF" fill-opacity="0.75" font-family="Arial, sans-serif" font-size="30" font-weight="700">Box Oleeee</text>
+</svg>

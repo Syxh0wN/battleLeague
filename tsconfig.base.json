@@ -10,10 +10,10 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@duelmen/shared-types": [
+      "@battleleague/shared-types": [
         "packages/shared-types/src"
       ],
-      "@duelmen/game-engine": [
+      "@battleleague/game-engine": [
         "packages/game-engine/src"
       ]
     }

@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
+import { ToastProvider } from "./toast-provider";
 
 type Props = {
   children: ReactNode;
@@ -13,11 +14,18 @@ export function QueryProvider({ children }: Props) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            refetchOnWindowFocus: false
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: true,
+            refetchIntervalInBackground: false,
+            staleTime: 10000
           }
         }
       })
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>{children}</ToastProvider>
+    </QueryClientProvider>
+  );
 }

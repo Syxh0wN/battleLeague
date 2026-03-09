@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsString } from "class-validator";
+import { IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class SubmitTurnDto {
   @IsString()
@@ -8,4 +8,9 @@ export class SubmitTurnDto {
   @IsString()
   @IsIn(["attack", "defend", "skill"])
   action!: "attack" | "defend" | "skill";
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  moveId?: string;
 }

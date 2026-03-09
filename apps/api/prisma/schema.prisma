@@ -26,15 +26,28 @@ enum QuestStatus {
   claimed
 }
 
+enum UserGender {
+  male
+  female
+}
+
 model User {
   id              String           @id @default(cuid())
   googleSub       String           @unique
   email           String           @unique
   displayName     String
+  accountTag      String?          @unique
   avatarUrl       String?
+  gender          UserGender       @default(male)
   xp              Int              @default(0)
   level           Int              @default(1)
   coins           Int              @default(0)
+  trainingPoints  Int              @default(0)
+  pokemonFragments Int             @default(0)
+  lootPityCounter Int              @default(0)
+  dailyShopPurchases Int           @default(0)
+  dailyShopPurchasedAt DateTime?
+  mmr             Int              @default(1200)
   totalWins       Int              @default(0)
   totalLosses     Int              @default(0)
   refreshToken    String?
@@ -48,6 +61,8 @@ model User {
   sentFriendships Friendship[]     @relation("FriendshipSender")
   receivedFriendships Friendship[] @relation("FriendshipReceiver")
   profileHistory  UserProfileHistory?
+  eventClaims     ProgressionEventClaim[]
+  lootBoxStates   UserLootBoxState[]
 }
 
 model PokemonSpecies {
@@ -63,6 +78,7 @@ model PokemonSpecies {
   evolutionTarget String?
   evolutionLevel  Int?
   imageUrl        String?
+  dropRarity      String           @default("common")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   userPokemons    UserPokemon[]
@@ -79,6 +95,12 @@ model UserPokemon {
   atk               Int
   def               Int
   speed             Int
+  lifeUtil          Int            @default(100)
+  isLegacy          Boolean        @default(false)
+  legacyAt          DateTime?
+  fatigue           Int            @default(0)
+  fatigueUpdatedAt  DateTime       @default(now())
+  trainingCooldownUntil DateTime?
   wins              Int            @default(0)
   losses            Int            @default(0)
   restCooldownUntil DateTime?
@@ -90,6 +112,7 @@ model UserPokemon {
   battleTurns       BattleTurn[]
   challengerBattles Battle[]       @relation("BattleChallengerPokemon")
   opponentBattles   Battle[]       @relation("BattleOpponentPokemon")
+  @@index([userId, isLegacy, wins, level])
 }
 
 model Battle {
@@ -101,6 +124,8 @@ model Battle {
   status             BattleStatus  @default(pending)
   expiresAt          DateTime
   winnerUserId       String?
+  challengerMmrDelta Int           @default(0)
+  opponentMmrDelta   Int           @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   challenger         User          @relation("BattleChallenger", fields: [challengerId], references: [id])
@@ -108,6 +133,9 @@ model Battle {
   challengerPokemon  UserPokemon   @relation("BattleChallengerPokemon", fields: [challengerPokemonId], references: [id])
   opponentPokemon    UserPokemon   @relation("BattleOpponentPokemon", fields: [opponentPokemonId], references: [id])
   turns              BattleTurn[]
+  @@index([challengerId, status, updatedAt])
+  @@index([opponentId, status, updatedAt])
+  @@index([winnerUserId, status, createdAt])
 }
 
 model BattleTurn {
@@ -116,6 +144,13 @@ model BattleTurn {
   actorUserId   String
   actorPokemonId String
   action        String
+  moveName      String?
+  moveType      String?
+  moveCategory  String?
+  movePriority  Int?
+  moveDamageMultiplier Float?
+  moveControlChance Float?
+  nextActorUserId String?
   damage        Int
   challengerHp  Int
   opponentHp    Int
@@ -124,6 +159,7 @@ model BattleTurn {
   battle        Battle       @relation(fields: [battleId], references: [id])
   actorPokemon  UserPokemon  @relation(fields: [actorPokemonId], references: [id])
   @@unique([battleId, idempotencyKey])
+  @@index([battleId, createdAt])
 }
 
 model UserQuest {
@@ -144,10 +180,45 @@ model UserQuest {
 model LootBoxOpen {
   id            String     @id @default(cuid())
   userId        String
+  boxType       String     @default("standard")
+  requestId     String?
+  rewardRarity  String?
   rewardType    String
   rewardValue   String
+  fragmentGain  Int        @default(0)
+  wasDuplicate  Boolean    @default(false)
+  pityBefore    Int        @default(0)
+  pityAfter     Int        @default(0)
   createdAt     DateTime   @default(now())
   user          User       @relation(fields: [userId], references: [id])
+  @@unique([userId, requestId])
+  @@index([userId, createdAt])
+}
+
+model UserLootBoxState {
+  id                  String   @id @default(cuid())
+  userId              String
+  boxType             String
+  pityCounter         Int      @default(0)
+  dailyShopPurchases  Int      @default(0)
+  dailyShopPurchasedAt DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id])
+  @@unique([userId, boxType])
+  @@index([userId])
+}
+
+model ProgressionEventClaim {
+  id          String   @id @default(cuid())
+  userId      String
+  eventCode   String
+  dayKey      String
+  rewardType  String
+  rewardValue String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  @@unique([userId, eventCode, dayKey])
 }
 
 model Friendship {
@@ -160,6 +231,8 @@ model Friendship {
   sender        User              @relation("FriendshipSender", fields: [senderId], references: [id])
   receiver      User              @relation("FriendshipReceiver", fields: [receiverId], references: [id])
   @@unique([senderId, receiverId])
+  @@index([receiverId, status, updatedAt])
+  @@index([senderId, status, updatedAt])
 }
 
 model UserProfileHistory {
@@ -190,4 +263,5 @@ model AuditLog {
   entityId      String?
   payload       String?
   createdAt     DateTime  @default(now())
+  @@index([actorUserId, action, entityName, createdAt])
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@duelmen/api",
+  "name": "@battleleague/api",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -9,11 +9,14 @@
     "lint": "tsc -p tsconfig.json --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:rebalance": "ts-node prisma/rebalancePokemonStats.ts",
+    "prisma:rebalance:xp": "ts-node prisma/rebalancePokemonXp.ts",
+    "prisma:randomize:levelBuckets": "ts-node prisma/randomizePokemonLevelBuckets.ts"
   },
   "dependencies": {
-    "@duelmen/game-engine": "1.0.0",
-    "@duelmen/shared-types": "1.0.0",
+    "@battleleague/game-engine": "1.0.0",
+    "@battleleague/shared-types": "1.0.0",
     "@nestjs/common": "^10.4.15",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.4.15",
@@ -28,6 +31,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "google-auth-library": "^9.15.1",
+    "helmet": "^8.1.0",
     "ioredis": "^5.4.2",
     "passport": "^0.7.0",
     "reflect-metadata": "^0.2.2",

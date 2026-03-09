@@ -13,18 +13,19 @@ export class SocialService {
   ) {}
 
   async sendFriendRequest(userId: string, dto: FriendRequestDto) {
-    if (userId === dto.targetUserId) {
+    const targetUserId = await this.resolveTargetUserId(dto.targetUserId);
+    if (userId === targetUserId) {
       throw new BadRequestException("cannotAddSelf");
     }
-    const target = await this.prisma.user.findUnique({ where: { id: dto.targetUserId } });
+    const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });
     if (!target) {
       throw new NotFoundException("targetUserNotFound");
     }
     const existing = await this.prisma.friendship.findFirst({
       where: {
         OR: [
-          { senderId: userId, receiverId: dto.targetUserId },
-          { senderId: dto.targetUserId, receiverId: userId }
+          { senderId: userId, receiverId: targetUserId },
+          { senderId: targetUserId, receiverId: userId }
         ]
       }
     });
@@ -34,7 +35,7 @@ export class SocialService {
     const friendship = await this.prisma.friendship.create({
       data: {
         senderId: userId,
-        receiverId: dto.targetUserId,
+        receiverId: targetUserId,
         status: FriendshipStatus.pending
       }
     });
@@ -75,8 +76,8 @@ export class SocialService {
         OR: [{ senderId: userId }, { receiverId: userId }]
       },
       include: {
-        sender: { select: { id: true, displayName: true, avatarUrl: true, level: true } },
-        receiver: { select: { id: true, displayName: true, avatarUrl: true, level: true } }
+        sender: { select: { id: true, displayName: true, accountTag: true, avatarUrl: true, level: true } },
+        receiver: { select: { id: true, displayName: true, accountTag: true, avatarUrl: true, level: true } }
       }
     });
     return accepted.map((friendship) => (friendship.senderId === userId ? friendship.receiver : friendship.sender));
@@ -93,11 +94,45 @@ export class SocialService {
           select: {
             id: true,
             displayName: true,
+            accountTag: true,
             avatarUrl: true,
             level: true
           }
         }
       }
     });
+  }
+
+  private normalizeProfileTag(value: string) {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/^@+/, "")
+      .replace(/\s+/g, "");
+  }
+
+  private async resolveTargetUserId(rawTarget: string) {
+    const normalizedTarget = this.normalizeProfileTag(rawTarget);
+    if (!normalizedTarget) {
+      throw new BadRequestException("targetUserNotFound");
+    }
+    if (!rawTarget.trim().startsWith("@")) {
+      return rawTarget.trim();
+    }
+    const accountTagMatch = await this.prisma.user.findFirst({
+      where: { accountTag: normalizedTarget },
+      select: { id: true }
+    });
+    if (accountTagMatch) {
+      return accountTagMatch.id;
+    }
+    const users = await this.prisma.user.findMany({
+      select: { id: true, displayName: true }
+    });
+    const displayNameMatch = users.find((user) => this.normalizeProfileTag(user.displayName) === normalizedTarget);
+    if (!displayNameMatch) {
+      throw new NotFoundException("targetUserNotFound");
+    }
+    return displayNameMatch.id;
   }
 }

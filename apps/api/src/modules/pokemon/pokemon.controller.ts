@@ -29,4 +29,9 @@ export class PokemonController {
   async evolve(@CurrentUser() user: AuthUser, @Param("userPokemonId") userPokemonId: string) {
     return this.pokemonService.evolvePokemon(user.userId, userPokemonId);
   }
+
+  @Post("train/:userPokemonId")
+  async train(@CurrentUser() user: AuthUser, @Param("userPokemonId") userPokemonId: string) {
+    return this.pokemonService.trainPokemon(user.userId, userPokemonId);
+  }
 }

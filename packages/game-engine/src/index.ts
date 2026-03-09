@@ -19,9 +19,49 @@ export type TurnResult = {
   winner: "challenger" | "opponent" | null;
 };
 
+export type TurnMove = {
+  action: TurnAction;
+  type: string;
+  power: number;
+  priority?: number;
+  category?: "physical" | "special" | "status";
+};
+
 const MIN_DAMAGE = 1;
 const CRIT_MULTIPLIER = 1.5;
 const SAME_TYPE_ATTACK_BONUS = 1.2;
+const STATUS_DAMAGE_MULTIPLIER = 0.55;
+const STATUS_CONTROL_CHANCE = 0.75;
+
+function getStatusTypeProfile(moveType: string) {
+  const normalizedType = moveType.toLowerCase();
+  if (normalizedType === "electric") {
+    return {
+      damageMultiplier: 0.5,
+      controlChance: 0.84,
+      priorityBonus: 0
+    };
+  }
+  if (normalizedType === "rock") {
+    return {
+      damageMultiplier: 0.45,
+      controlChance: 0.58,
+      priorityBonus: 1
+    };
+  }
+  if (normalizedType === "steel") {
+    return {
+      damageMultiplier: 0.48,
+      controlChance: 0.64,
+      priorityBonus: 1
+    };
+  }
+  return {
+    damageMultiplier: STATUS_DAMAGE_MULTIPLIER,
+    controlChance: STATUS_CONTROL_CHANCE,
+    priorityBonus: 0
+  };
+}
 
 const typeEffectivenessMap: Record<string, Record<string, number>> = {
   normal: { rock: 0.5, ghost: 0, steel: 0.5 },
@@ -75,20 +115,40 @@ export function resolveTurn(
   challenger: EnginePokemon,
   opponent: EnginePokemon,
   action: TurnAction,
-  actor: "challenger" | "opponent"
+  actor: "challenger" | "opponent",
+  selectedMove?: TurnMove
 ): TurnResult {
   const attacker = actor === "challenger" ? challenger : opponent;
   const defender = actor === "challenger" ? opponent : challenger;
-  const actionPower = action === "defend" ? 25 : action === "skill" ? 85 : 55;
-  const moveType = getMoveType(action, attacker);
+  const effectiveAction = selectedMove?.action ?? action;
+  const actionPower = selectedMove?.power ?? (effectiveAction === "defend" ? 25 : effectiveAction === "skill" ? 85 : 55);
+  const actionPriority = selectedMove?.priority ?? 0;
+  const actionCategory = selectedMove?.category ?? (effectiveAction === "skill" ? "special" : effectiveAction === "defend" ? "status" : "physical");
+  const moveType = selectedMove?.type ?? getMoveType(effectiveAction, attacker);
+  const statusProfile = actionCategory === "status" ? getStatusTypeProfile(moveType) : null;
   const attackerLevel = Math.max(1, attacker.level);
-  const defenderDefense = Math.max(1, defender.def);
+  const attackerAttack =
+    actionCategory === "special"
+      ? Math.max(1, Math.round(attacker.atk * 1.08))
+      : actionCategory === "status"
+        ? Math.max(1, Math.round(attacker.atk * 0.75))
+        : attacker.atk;
+  const defenderDefense =
+    actionCategory === "special"
+      ? Math.max(1, Math.round(defender.def * 0.92))
+      : actionCategory === "status"
+        ? Math.max(1, Math.round(defender.def * 1.1))
+        : Math.max(1, defender.def);
   const levelComponent = Math.floor((2 * attackerLevel) / 5) + 2;
-  const baseDamage = Math.floor((levelComponent * actionPower * attacker.atk) / defenderDefense / 50) + 2;
+  const categoryMultiplier = actionCategory === "status" ? (statusProfile?.damageMultiplier ?? STATUS_DAMAGE_MULTIPLIER) : 1;
+  const baseDamage = Math.floor(((levelComponent * actionPower * attackerAttack) / defenderDefense / 50 + 2) * categoryMultiplier);
   const stab = moveType.toLowerCase() === attacker.typePrimary.toLowerCase() ? SAME_TYPE_ATTACK_BONUS : 1;
   const typeEffectiveness = getTypeEffectiveness(moveType, defender);
   const randomFactor = 0.85 + Math.random() * 0.15;
-  const criticalChance = Math.min(0.25, 0.04 + attacker.speed / 700);
+  const criticalChance =
+    actionCategory === "status"
+      ? 0.01
+      : Math.min(0.3, 0.04 + attacker.speed / 700 + (actionCategory === "special" ? 0.03 : 0));
   const criticalMultiplier = Math.random() < criticalChance ? CRIT_MULTIPLIER : 1;
   const damage = Math.max(MIN_DAMAGE, Math.floor(baseDamage * stab * typeEffectiveness * randomFactor * criticalMultiplier));
 
@@ -97,7 +157,20 @@ export function resolveTurn(
   const challengerHp = challenger.currentHp;
   const opponentHp = opponent.currentHp;
   const winner = challengerHp <= 0 ? "opponent" : opponentHp <= 0 ? "challenger" : null;
-  const nextAttacker = challenger.speed >= opponent.speed ? "challenger" : "opponent";
+  const fallbackBySpeed = challenger.speed >= opponent.speed ? "challenger" : "opponent";
+  const effectivePriority = actionCategory === "status" ? actionPriority + (statusProfile?.priorityBonus ?? 0) : actionPriority;
+  const priorityNextAttacker =
+    effectivePriority >= 2
+      ? actor
+      : effectivePriority <= -1
+        ? actor === "challenger"
+          ? "opponent"
+          : "challenger"
+        : fallbackBySpeed;
+  const nextAttacker =
+    !winner && actionCategory === "status" && Math.random() < (statusProfile?.controlChance ?? STATUS_CONTROL_CHANCE)
+      ? actor
+      : priorityNextAttacker;
 
   return {
     damage,

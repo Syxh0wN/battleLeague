@@ -17,6 +17,8 @@ type AuthResponse = {
   };
 };
 
+const GoogleDefaultAvatarUrl = "https://www.gstatic.com/images/branding/product/1x/avatar_circle_blue_512dp.png";
+
 @Injectable()
 export class AuthService {
   private readonly googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -36,17 +38,25 @@ export class AuthService {
       throw new UnauthorizedException("invalidGooglePayload");
     }
 
+    const displayName = payload.name || payload.given_name || email.split("@")[0];
+    const existingUser = await this.prisma.user.findUnique({
+      where: { googleSub },
+      select: { accountTag: true }
+    });
+    const preferredAccountTag = existingUser?.accountTag ?? (await this.getAvailableAccountTag(displayName));
     const user = await this.prisma.user.upsert({
       where: { googleSub },
       update: {
         email,
-        displayName: payload.name ?? email.split("@")[0],
-        avatarUrl: payload.picture ?? null
+        displayName,
+        avatarUrl: payload.picture ?? null,
+        accountTag: preferredAccountTag
       },
       create: {
         googleSub,
         email,
-        displayName: payload.name ?? email.split("@")[0],
+        displayName,
+        accountTag: preferredAccountTag,
         avatarUrl: payload.picture ?? null,
         profileHistory: {
           create: {
@@ -57,6 +67,14 @@ export class AuthService {
         }
       }
     });
+
+    if (user.displayName !== displayName) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { displayName }
+      });
+      user.displayName = displayName;
+    }
 
     const tokens = await this.issueSessionTokens(user.id, user.email);
     await this.auditService.write({
@@ -78,17 +96,29 @@ export class AuthService {
     };
   }
 
-  async quickLogin(): Promise<AuthResponse> {
-    const quickGoogleSub = "quickLoginLocalUser";
-    const quickEmail = "quick.login@duelmen.local";
+  async localAutoLogin(profile?: string): Promise<AuthResponse> {
+    const normalizedProfile = (profile ?? "a").trim().toLowerCase() === "b" ? "b" : "a";
+    const localGoogleSub = normalizedProfile === "b" ? "localHostUserB" : "localHostUserA";
+    const localEmail = normalizedProfile === "b" ? "local.b@battleleague.local" : "local.a@battleleague.local";
+    const localDisplayName = normalizedProfile === "b" ? "Treinador Rede" : "Treinador Local";
+    const localAccountTag = normalizedProfile === "b" ? "contab" : "contaa";
+    const localAvatarUrl =
+      normalizedProfile === "b"
+        ? "https://api.dicebear.com/9.x/adventurer/svg?seed=TreinadorRede"
+        : "https://api.dicebear.com/9.x/adventurer/svg?seed=TreinadorLocal";
+
     const user = await this.prisma.user.upsert({
-      where: { googleSub: quickGoogleSub },
-      update: {},
+      where: { googleSub: localGoogleSub },
+      update: {
+        email: localEmail,
+        avatarUrl: localAvatarUrl
+      },
       create: {
-        googleSub: quickGoogleSub,
-        email: quickEmail,
-        displayName: "Treinador Local",
-        avatarUrl: null,
+        googleSub: localGoogleSub,
+        email: localEmail,
+        displayName: localDisplayName,
+        accountTag: localAccountTag,
+        avatarUrl: localAvatarUrl,
         profileHistory: {
           create: {
             battleCount: 0,
@@ -98,13 +128,15 @@ export class AuthService {
         }
       }
     });
+
     const tokens = await this.issueSessionTokens(user.id, user.email);
     await this.auditService.write({
       actorUserId: user.id,
-      action: "QuickLoginSuccess",
+      action: "LocalAutoLoginSuccess",
       entityName: "User",
       entityId: user.id
     });
+
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -121,6 +153,13 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.refreshToken) {
       throw new UnauthorizedException("invalidRefreshToken");
+    }
+    if (user.googleSub.startsWith("quickLoginLocalUser")) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken: null }
+      });
+      throw new UnauthorizedException("googleLoginRequired");
     }
 
     const isValid = await argon2.verify(user.refreshToken, refreshToken);
@@ -183,5 +222,30 @@ export class AuthService {
       throw new UnauthorizedException("unverifiedGoogleEmail");
     }
     return payload;
+  }
+
+  private normalizeAccountTag(value: string) {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/^@+/, "")
+      .replace(/[^a-z0-9_]/g, "");
+  }
+
+  private async getAvailableAccountTag(baseValue: string) {
+    const normalizedBase = this.normalizeAccountTag(baseValue) || "treinador";
+    let candidate = normalizedBase;
+    let suffix = 2;
+    while (true) {
+      const existing = await this.prisma.user.findFirst({
+        where: { accountTag: candidate },
+        select: { id: true }
+      });
+      if (!existing) {
+        return candidate;
+      }
+      candidate = `${normalizedBase}${suffix}`;
+      suffix += 1;
+    }
   }
 }
