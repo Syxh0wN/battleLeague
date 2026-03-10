@@ -40,7 +40,11 @@ export class PokemonService {
     try {
       return await this.loadStarterChoicesByStage(this.starterChoicesByStage);
     } catch {
-      return this.loadStarterChoicesByStage(StarterChoicesByStage);
+      try {
+        return await this.loadStarterChoicesByStage(StarterChoicesByStage);
+      } catch {
+        return this.buildStarterChoicesFromCatalog();
+      }
     }
   }
 
@@ -551,6 +555,138 @@ export class PokemonService {
       .map((name) => name.trim().toLowerCase())
       .map((name) => familyIdByName.get(name) ?? name);
     return this.hasDuplicateNames(selectedFamilyIds);
+  }
+
+  private async buildStarterChoicesFromCatalog() {
+    const catalog = await this.prisma.pokemonSpecies.findMany({
+      orderBy: { pokeApiId: "asc" },
+      select: {
+        id: true,
+        name: true,
+        typePrimary: true,
+        imageUrl: true,
+        evolutionTarget: true
+      }
+    });
+    if (catalog.length === 0) {
+      throw new NotFoundException("starterChoicesNotAvailable");
+    }
+    const evolvedFromNameSet = new Set(
+      catalog
+        .map((species) => species.evolutionTarget?.trim().toLowerCase() ?? "")
+        .filter((value) => value.length > 0)
+    );
+    const stageOnePool = catalog.filter(
+      (species) => !!species.evolutionTarget && !evolvedFromNameSet.has(species.name.trim().toLowerCase())
+    );
+    const stageTwoPool = catalog.filter(
+      (species) => !!species.evolutionTarget && evolvedFromNameSet.has(species.name.trim().toLowerCase())
+    );
+    const stageThreePool = catalog.filter((species) => !species.evolutionTarget);
+    const familyIdByName = this.buildFamilyIdBySpeciesName(catalog);
+    const mapToItem = (species: {
+      id: string;
+      name: string;
+      typePrimary: string;
+      imageUrl: string | null;
+    }): StarterChoiceItem => ({
+      id: species.id,
+      name: species.name,
+      typePrimary: species.typePrimary,
+      imageUrl: species.imageUrl
+    });
+    const pickUniqueFamilies = (
+      primaryPool: Array<{
+        id: string;
+        name: string;
+        typePrimary: string;
+        imageUrl: string | null;
+      }>,
+      usedFamilyIds: Set<string>,
+      maxItems: number
+    ) => {
+      const selected: StarterChoiceItem[] = [];
+      for (const species of primaryPool) {
+        const normalizedName = species.name.trim().toLowerCase();
+        const familyId = familyIdByName.get(normalizedName) ?? normalizedName;
+        if (usedFamilyIds.has(familyId)) {
+          continue;
+        }
+        selected.push(mapToItem(species));
+        usedFamilyIds.add(familyId);
+        if (selected.length >= maxItems) {
+          break;
+        }
+      }
+      return selected;
+    };
+    const usedFamilyIds = new Set<string>();
+    const stageTwo = pickUniqueFamilies(stageTwoPool, usedFamilyIds, 5);
+    const stageOne = pickUniqueFamilies(stageOnePool, usedFamilyIds, 5);
+    const stageThree = pickUniqueFamilies(stageThreePool, usedFamilyIds, 5);
+    if (stageOne.length === 0 || stageTwo.length === 0 || stageThree.length === 0) {
+      throw new NotFoundException("starterChoicesNotAvailable");
+    }
+    return {
+      stageOne,
+      stageTwo,
+      stageThree
+    };
+  }
+
+  private buildFamilyIdBySpeciesName(
+    speciesCatalog: Array<{
+      name: string;
+      evolutionTarget: string | null;
+    }>
+  ) {
+    const graph = new Map<string, Set<string>>();
+    const connect = (leftName: string, rightName: string) => {
+      if (!graph.has(leftName)) {
+        graph.set(leftName, new Set());
+      }
+      if (!graph.has(rightName)) {
+        graph.set(rightName, new Set());
+      }
+      graph.get(leftName)?.add(rightName);
+      graph.get(rightName)?.add(leftName);
+    };
+    for (const species of speciesCatalog) {
+      const sourceName = species.name.trim().toLowerCase();
+      if (!graph.has(sourceName)) {
+        graph.set(sourceName, new Set());
+      }
+      if (!species.evolutionTarget) {
+        continue;
+      }
+      const targetName = species.evolutionTarget.trim().toLowerCase();
+      if (targetName.length === 0) {
+        continue;
+      }
+      connect(sourceName, targetName);
+    }
+    const familyIdByName = new Map<string, string>();
+    for (const rootName of graph.keys()) {
+      if (familyIdByName.has(rootName)) {
+        continue;
+      }
+      const queue = [rootName];
+      familyIdByName.set(rootName, rootName);
+      while (queue.length > 0) {
+        const currentName = queue.shift();
+        if (!currentName) {
+          continue;
+        }
+        for (const neighborName of graph.get(currentName) ?? []) {
+          if (familyIdByName.has(neighborName)) {
+            continue;
+          }
+          familyIdByName.set(neighborName, rootName);
+          queue.push(neighborName);
+        }
+      }
+    }
+    return familyIdByName;
   }
 
 }

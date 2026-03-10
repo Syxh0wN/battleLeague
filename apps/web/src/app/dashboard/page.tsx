@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ApiFetch } from "../../lib/api";
 import { GetTrainerLabelLower, GetTrainerPossessive } from "../../lib/trainer-gender";
 import { useToast } from "../../providers/toast-provider";
@@ -167,6 +168,7 @@ function GetRecentBattlesVisibleCountByWidth(screenWidth: number) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { addToast } = useToast();
   const [nowMs, setNowMs] = useState(Date.now());
   const [recentLevelUpTo, setRecentLevelUpTo] = useState<number | null>(null);
@@ -277,6 +279,16 @@ export default function DashboardPage() {
     }
     return Array.from(byCategory.entries());
   }, [lootEconomyQuery.data?.lootBoxCatalog]);
+
+  useEffect(() => {
+    if (myPokemonsNotificationQuery.isLoading) {
+      return;
+    }
+    if (myPokemonsForNotifications.length > 0) {
+      return;
+    }
+    router.replace("/pokemon");
+  }, [myPokemonsForNotifications.length, myPokemonsNotificationQuery.isLoading, router]);
   const openLootBoxMutation = useMutation({
     mutationFn: () =>
       ApiFetch<LootBoxOpeningResponse>("/progression/lootbox/open", {

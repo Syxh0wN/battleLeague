@@ -145,6 +145,7 @@ export default function PokemonPage() {
     stageThree: ""
   });
   const [isStarterRewardModalOpen, setIsStarterRewardModalOpen] = useState(false);
+  const [starterStep, setStarterStep] = useState<1 | 2 | 3>(1);
   const teamLoadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const lootRouletteIntervalRef = useRef<number | null>(null);
   const myPokemonsQuery = useQuery({
@@ -535,6 +536,7 @@ export default function PokemonPage() {
   });
 
   const myPokemons = myPokemonsQuery.data ?? [];
+  const showStarterSelectionModal = !myPokemonsQuery.isLoading && myPokemons.length === 0;
   const visibleMyPokemons = useMemo(() => myPokemons.slice(0, visibleTeamCount), [myPokemons, visibleTeamCount]);
   const hasMoreMyPokemons = visibleTeamCount < myPokemons.length;
   const me = meQuery.data ?? null;
@@ -550,11 +552,36 @@ export default function PokemonPage() {
   );
   const myTrainingPoints = meQuery.data?.trainingPoints ?? 0;
   const starterChoices = starterChoicesQuery.data ?? { stageOne: [], stageTwo: [], stageThree: [] };
+  const starterStageFlow: Array<{
+    stageKey: "stageOne" | "stageTwo" | "stageThree";
+    title: string;
+    subtitle: string;
+    choices: Species[];
+  }> = [
+    { stageKey: "stageOne", title: "Evolucao minima", subtitle: "Primeira escolha", choices: starterChoices.stageOne },
+    { stageKey: "stageTwo", title: "Evolucao 2", subtitle: "Segunda escolha", choices: starterChoices.stageTwo },
+    { stageKey: "stageThree", title: "Evolucao maxima", subtitle: "Ultima escolha", choices: starterChoices.stageThree }
+  ];
+  const currentStarterStage = starterStageFlow[starterStep - 1];
+  const currentStarterStageSelection = selectedStarterByStage[currentStarterStage.stageKey];
+  const canAdvanceStarterStep = currentStarterStageSelection.length > 0;
   const canConfirmStarterBundle =
     selectedStarterByStage.stageOne.length > 0 &&
     selectedStarterByStage.stageTwo.length > 0 &&
     selectedStarterByStage.stageThree.length > 0;
   const hiddenKey = me ? `battleleague:hiddenDashboardChampionIds:${me.id}` : HiddenPoolFallbackKey;
+
+  useEffect(() => {
+    if (!showStarterSelectionModal) {
+      return;
+    }
+    setStarterStep(1);
+    setSelectedStarterByStage({
+      stageOne: "",
+      stageTwo: "",
+      stageThree: ""
+    });
+  }, [showStarterSelectionModal]);
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -1036,66 +1063,190 @@ export default function PokemonPage() {
         </section>
       ) : (
         <section className={SectionCardClass}>
-          <div className="mb-4 grid gap-3 rounded-xl p-3 ring-1 ring-inset ring-slate-600/70 sm:p-4 md:grid-cols-[44px_1fr] md:items-center">
-            <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-slate-800 text-xs font-bold text-slate-300 ring-1 ring-inset ring-slate-600/70">PK</div>
-            <div className="grid gap-1">
-              <strong>Seu time ainda esta vazio</strong>
-              <p className="text-sm text-slate-300">Escolha 1 pokemon de cada estagio para montar seu time inicial e iniciar sua jornada no ranking {trainerPossessive}.</p>
+          <div className="grid min-h-[240px] place-items-center rounded-xl bg-slate-900/65 p-4 ring-1 ring-inset ring-slate-700/70">
+            <div className="grid max-w-md gap-2 text-center">
+              <strong className="text-lg text-slate-100">Monte seu time inicial</strong>
+              <p className="text-sm text-slate-300">O draft inicial agora abre em modal com escolha por estagio.</p>
             </div>
-          </div>
-          <div className="grid gap-4">
-            {[
-              { stageKey: "stageOne", title: "Evolucao minima", choices: starterChoices.stageOne },
-              { stageKey: "stageTwo", title: "Evolucao 2", choices: starterChoices.stageTwo },
-              { stageKey: "stageThree", title: "Evolucao maxima", choices: starterChoices.stageThree }
-            ].map((stage) => (
-              <section key={stage.stageKey} className="grid gap-3 rounded-xl bg-slate-900/60 p-3 ring-1 ring-inset ring-slate-700/70">
-                <div className="flex items-center justify-between gap-2">
-                  <strong>{stage.title}</strong>
-                  <small className="text-slate-300">Escolha 1 entre 5 opcoes</small>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                  {stage.choices.map((species) => {
-                    const isSelected =
-                      selectedStarterByStage[stage.stageKey as "stageOne" | "stageTwo" | "stageThree"].trim().toLowerCase() ===
-                      species.name.trim().toLowerCase();
-                    return (
-                      <button
-                        key={species.id}
-                        type="button"
-                        className={`grid gap-3 rounded-xl p-3 text-left ring-1 ring-inset transition ${
-                          isSelected
-                            ? "bg-emerald-900/40 ring-emerald-400/70"
-                            : "bg-slate-900/70 ring-slate-700/70 hover:bg-slate-800/80 hover:ring-slate-500/70"
-                        }`}
-                        onClick={() => HandleStarterPick(stage.stageKey as "stageOne" | "stageTwo" | "stageThree", species.name)}
-                      >
-                        <div className="relative grid h-24 place-items-center overflow-hidden rounded-xl bg-slate-800/70">
-                          <span className="absolute right-2 top-2 rounded-full bg-slate-900/85 px-2 py-0.5 text-xs font-semibold capitalize text-slate-100 ring-1 ring-inset ring-slate-600/70">
-                            {species.typePrimary}
-                          </span>
-                          {species.imageUrl ? (
-                            <img loading="lazy" decoding="async" src={species.imageUrl} alt={species.name} className="h-16 w-16 object-contain sm:h-20 sm:w-20" />
-                          ) : (
-                            <div className="text-xs font-bold text-slate-400">PK</div>
-                          )}
-                        </div>
-                        <div className="grid gap-1">
-                          <strong className="capitalize">{species.name}</strong>
-                          {isSelected ? <small className="text-emerald-300">Selecionado</small> : null}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-            <button type="button" className={PrimaryButtonClass} onClick={HandleStarterBundleClaim} disabled={!canConfirmStarterBundle || claimStarterBundleMutation.isPending}>
-              {claimStarterBundleMutation.isPending ? "Confirmando time..." : "Confirmar time inicial"}
-            </button>
           </div>
         </section>
       )}
+      {showStarterSelectionModal ? (
+        <div className="fixed inset-0 z-[115] grid place-items-center overflow-y-auto bg-slate-950/80 p-3 sm:p-5">
+          <div className="grid w-full max-w-[1200px] max-h-[92vh] gap-4 overflow-y-auto rounded-2xl border border-slate-700/80 bg-slate-900/95 p-4 shadow-[0_26px_80px_rgba(2,6,23,0.65)] sm:max-h-[94vh] sm:p-5">
+            <div className="grid gap-2 rounded-xl bg-slate-900/75 p-3 ring-1 ring-inset ring-slate-700/70 sm:p-4">
+              <strong className="text-lg text-slate-100">Escolha seus 3 pokemons iniciais</strong>
+              <p className="text-sm text-slate-300">
+                Selecione 1 pokemon por estagio para iniciar o ranking {trainerPossessive}. Depois voce recebe 1000 coins para abrir caixas.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {starterStageFlow.map((stage, stageIndex) => {
+                  const stageNumber = stageIndex + 1;
+                  const isCurrent = stageNumber === starterStep;
+                  const hasSelection = selectedStarterByStage[stage.stageKey].length > 0;
+                  return (
+                    <button
+                      key={stage.stageKey}
+                      type="button"
+                      onClick={() => setStarterStep(stageNumber as 1 | 2 | 3)}
+                      className={`rounded-lg border px-2 py-1.5 text-xs font-semibold transition ${
+                        isCurrent
+                          ? "border-cyan-300/70 bg-cyan-500/20 text-cyan-100"
+                          : hasSelection
+                            ? "border-emerald-300/60 bg-emerald-500/15 text-emerald-100"
+                            : "border-slate-700/70 bg-slate-900/75 text-slate-300 hover:border-slate-500/70"
+                      }`}
+                    >
+                      Etapa {stageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="grid gap-4">
+              {starterChoicesQuery.isLoading ? (
+                <div className="grid min-h-[160px] place-items-center rounded-xl border border-slate-700/70 bg-slate-900/70 p-4 text-sm text-slate-300">
+                  Carregando opcoes...
+                </div>
+              ) : starterChoicesQuery.isError ? (
+                <div className="grid gap-3 rounded-xl border border-red-400/35 bg-red-500/10 p-4">
+                  <small className="text-sm text-red-100">Nao foi possivel listar os pokemons iniciais agora.</small>
+                  <button
+                    type="button"
+                    className={PrimaryButtonClass}
+                    onClick={() => {
+                      void starterChoicesQuery.refetch();
+                    }}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="hidden max-h-[66vh] gap-4 overflow-y-auto pr-1 sm:grid">
+                    {starterStageFlow.map((stage) => (
+                      <section key={stage.stageKey} className="grid gap-3 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="grid">
+                            <strong className="text-slate-100">{stage.title}</strong>
+                            <small className="text-slate-400">{stage.subtitle}</small>
+                          </div>
+                          <small className="rounded-full bg-slate-800/90 px-2 py-0.5 text-[11px] font-semibold text-slate-200 ring-1 ring-inset ring-slate-600/70">
+                            Escolha 1/{stage.choices.length}
+                          </small>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                          {stage.choices.map((species) => {
+                            const isSelected = selectedStarterByStage[stage.stageKey].trim().toLowerCase() === species.name.trim().toLowerCase();
+                            return (
+                              <button
+                                key={species.id}
+                                type="button"
+                                className={`relative grid min-h-[164px] overflow-hidden rounded-xl border text-left transition ${
+                                  isSelected
+                                    ? "border-cyan-300/70 bg-cyan-500/10 shadow-[0_0_20px_rgba(34,211,238,0.25)]"
+                                    : "border-slate-700/70 bg-slate-900/80 hover:border-cyan-300/50 hover:bg-slate-800/90 hover:shadow-[0_0_16px_rgba(34,211,238,0.18)]"
+                                }`}
+                                onClick={() => HandleStarterPick(stage.stageKey, species.name)}
+                              >
+                                {species.imageUrl ? (
+                                  <div className="absolute inset-0 grid place-items-center p-3">
+                                    <img src={species.imageUrl} alt={species.name} className="h-24 w-24 max-w-full object-contain opacity-85 drop-shadow-[0_8px_20px_rgba(2,6,23,0.55)]" />
+                                  </div>
+                                ) : null}
+                                <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 to-slate-950/90" />
+                                <div className="relative z-10 mt-auto grid gap-1 p-3">
+                                  <span className="inline-flex w-fit rounded-full bg-slate-900/90 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-100 ring-1 ring-inset ring-slate-600/70">
+                                    {species.typePrimary}
+                                  </span>
+                                  <strong className="capitalize text-slate-100">{species.name}</strong>
+                                  <small className={isSelected ? "text-cyan-200" : "text-slate-300"}>
+                                    {isSelected ? "Selecionado" : "Toque para escolher"}
+                                  </small>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                  <section className="grid gap-3 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 sm:hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="grid">
+                        <strong className="text-slate-100">{currentStarterStage.title}</strong>
+                        <small className="text-slate-400">{currentStarterStage.subtitle}</small>
+                      </div>
+                      <small className="rounded-full bg-slate-800/90 px-2 py-0.5 text-[11px] font-semibold text-slate-200 ring-1 ring-inset ring-slate-600/70">
+                        Etapa {starterStep} de 3
+                      </small>
+                    </div>
+                    <div className="grid gap-3">
+                      {currentStarterStage.choices.map((species) => {
+                        const isSelected = currentStarterStageSelection.trim().toLowerCase() === species.name.trim().toLowerCase();
+                        return (
+                          <button
+                            key={species.id}
+                            type="button"
+                            className={`relative grid min-h-[150px] overflow-hidden rounded-xl border text-left transition ${
+                              isSelected
+                                ? "border-cyan-300/70 bg-cyan-500/10 shadow-[0_0_20px_rgba(34,211,238,0.25)]"
+                                : "border-slate-700/70 bg-slate-900/80"
+                            }`}
+                            onClick={() => HandleStarterPick(currentStarterStage.stageKey, species.name)}
+                          >
+                            {species.imageUrl ? (
+                              <div className="absolute inset-0 grid place-items-center p-3">
+                                <img src={species.imageUrl} alt={species.name} className="h-20 w-20 max-w-full object-contain opacity-85 drop-shadow-[0_8px_20px_rgba(2,6,23,0.55)]" />
+                              </div>
+                            ) : null}
+                            <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 to-slate-950/90" />
+                            <div className="relative z-10 mt-auto grid gap-1 p-3">
+                              <span className="inline-flex w-fit rounded-full bg-slate-900/90 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-100 ring-1 ring-inset ring-slate-600/70">
+                                {species.typePrimary}
+                              </span>
+                              <strong className="capitalize text-slate-100">{species.name}</strong>
+                              <small className={isSelected ? "text-cyan-200" : "text-slate-300"}>
+                                {isSelected ? "Selecionado" : "Toque para escolher"}
+                              </small>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:hidden">
+              {starterStep > 1 && !starterChoicesQuery.isLoading && !starterChoicesQuery.isError ? (
+                <button type="button" className={PrimaryButtonClass} onClick={() => setStarterStep((starterStep - 1) as 1 | 2 | 3)}>
+                  Voltar
+                </button>
+              ) : null}
+              {starterStep < 3 && !starterChoicesQuery.isLoading && !starterChoicesQuery.isError ? (
+                <button
+                  type="button"
+                  className={PrimaryButtonClass}
+                  disabled={!canAdvanceStarterStep || starterChoicesQuery.isLoading || starterChoicesQuery.isError}
+                  onClick={() => setStarterStep((starterStep + 1) as 1 | 2 | 3)}
+                >
+                  Continuar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`${PrimaryButtonClass} h-11`}
+                  onClick={HandleStarterBundleClaim}
+                  disabled={!canConfirmStarterBundle || claimStarterBundleMutation.isPending || starterChoicesQuery.isLoading || starterChoicesQuery.isError}
+                >
+                  {claimStarterBundleMutation.isPending ? "Confirmando time..." : "Confirmar time inicial"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
       {isStarterRewardModalOpen ? (
         <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/70 p-4">
           <div className="grid w-full max-w-md gap-4 rounded-2xl bg-slate-900 p-5 ring-1 ring-inset ring-slate-700/80">

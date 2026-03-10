@@ -8,6 +8,10 @@ type LoginResponse = {
   accessToken: string;
 };
 
+type UserPokemonSummary = {
+  id: string;
+};
+
 type GoogleCredentialResponse = {
   credential?: string;
 };
@@ -66,6 +70,28 @@ export function GoogleLoginButton() {
     const containerWidth = buttonElement.parentElement?.clientWidth ?? buttonElement.clientWidth ?? 320;
     return Math.max(220, Math.min(380, containerWidth - 4));
   };
+  const ResolvePostLoginPath = async (accessToken: string) => {
+    const apiUrl = ResolveApiUrl();
+    try {
+      const response = await fetch(`${apiUrl}/pokemon/my`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      if (!response.ok) {
+        return "/dashboard";
+      }
+      const data = (await response.json()) as UserPokemonSummary[];
+      if (Array.isArray(data) && data.length === 0) {
+        return "/pokemon";
+      }
+      return "/dashboard";
+    } catch {
+      return "/dashboard";
+    }
+  };
 
   const LoginWithGoogleCredential = async (idToken: string) => {
     const apiUrl = ResolveApiUrl();
@@ -90,7 +116,8 @@ export function GoogleLoginButton() {
       message: "Conta Google conectada com sucesso.",
       tone: "success"
     });
-    router.replace("/dashboard");
+    const nextPath = await ResolvePostLoginPath(data.accessToken);
+    router.replace(nextPath);
   };
 
   const RenderGoogleButton = () => {
@@ -193,7 +220,8 @@ export function GoogleLoginButton() {
           return false;
         }
         localStorage.setItem("AccessToken", data.accessToken);
-        router.replace("/dashboard");
+        const nextPath = await ResolvePostLoginPath(data.accessToken);
+        router.replace(nextPath);
         return true;
       } catch {
         localStorage.removeItem("AccessToken");
