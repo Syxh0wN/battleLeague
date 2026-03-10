@@ -898,11 +898,22 @@ export class BattleService {
     const effectiveExpiresAt = this.getEffectiveExpiresAt(battle.createdAt, battle.expiresAt);
     const scheduledStartAt = this.getBattleStartAt(battle.createdAt);
     const nowMs = Date.now();
-    let derivedStatus = battle.status;
+    if (battle.status === BattleStatus.pending && nowMs >= scheduledStartAt.getTime()) {
+      await this.prisma.battle.update({
+        where: { id: battle.id },
+        data: { status: BattleStatus.active }
+      });
+      battle.status = BattleStatus.active;
+    }
     if (battle.status !== BattleStatus.finished && battle.status !== BattleStatus.expired && effectiveExpiresAt.getTime() < nowMs) {
-      derivedStatus = BattleStatus.expired;
-    } else if (battle.status === BattleStatus.pending && nowMs >= scheduledStartAt.getTime()) {
-      derivedStatus = BattleStatus.active;
+      const timeoutResult = await this.settleBattleByHpOnTimeout({
+        ...battle,
+        isRanked: !isAiBattle
+      });
+      battle.status = timeoutResult.status;
+      battle.winnerUserId = timeoutResult.winnerUserId;
+    } else if (battle.status === BattleStatus.active && !battle.winnerUserId) {
+      await this.processTurnTimeoutAutoActions(battle, isAiBattle);
     }
     const challengerMoves = this.getPokemonMoveSet({
       speciesName: battle.challengerPokemon.species.name,
@@ -926,7 +937,7 @@ export class BattleService {
     const currentTurnMoves = currentTurnUserId === battle.challengerId ? challengerMoves : opponentMoves;
     return {
       ...battle,
-      status: derivedStatus,
+      status: battle.status,
       currentTurnUserId,
       scheduledStartAt,
       expiresAt: effectiveExpiresAt,

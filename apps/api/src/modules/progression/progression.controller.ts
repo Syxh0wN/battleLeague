@@ -37,7 +37,7 @@ export class ProgressionController {
   }
 
   @Post("lootbox/open")
-  @Throttle({ default: { limit: 8, ttl: 60_000 } })
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   async openLootBox(@CurrentUser() user: AuthUser, @Body() dto: OpenLootBoxDto) {
     return this.progressionService.openLootBox(user.userId, dto);
   }
