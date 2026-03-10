@@ -55,6 +55,10 @@ type StarterChoicesResponse = {
   stageThree: Species[];
 };
 
+const StarterStageOneDefaultNames = ["bulbasaur", "charmander", "squirtle", "abra", "gastly"];
+const StarterStageTwoDefaultNames = ["bayleef", "quilava", "croconaw", "grovyle", "combusken"];
+const StarterStageThreeDefaultNames = ["dragonite", "tyranitar", "metagross", "salamence", "garchomp"];
+
 type MeSummary = {
   id: string;
   displayName: string;
@@ -551,7 +555,53 @@ export default function PokemonPage() {
     [dashboardChampionsQuery.data]
   );
   const myTrainingPoints = meQuery.data?.trainingPoints ?? 0;
-  const starterChoices = starterChoicesQuery.data ?? { stageOne: [], stageTwo: [], stageThree: [] };
+  const starterChoices = useMemo(() => {
+    if (starterChoicesQuery.data) {
+      return starterChoicesQuery.data;
+    }
+    const speciesCatalog = speciesQuery.data ?? [];
+    if (speciesCatalog.length === 0) {
+      return { stageOne: [], stageTwo: [], stageThree: [] };
+    }
+    const speciesByName = new Map(speciesCatalog.map((species) => [species.name.trim().toLowerCase(), species]));
+    const usedNames = new Set<string>();
+    const pickStage = (preferredNames: string[], targetCount: number) => {
+      const selected: Species[] = [];
+      for (const preferredName of preferredNames) {
+        const normalizedName = preferredName.trim().toLowerCase();
+        if (usedNames.has(normalizedName)) {
+          continue;
+        }
+        const species = speciesByName.get(normalizedName);
+        if (!species) {
+          continue;
+        }
+        selected.push(species);
+        usedNames.add(normalizedName);
+        if (selected.length >= targetCount) {
+          break;
+        }
+      }
+      if (selected.length < targetCount) {
+        for (const species of speciesCatalog) {
+          const normalizedName = species.name.trim().toLowerCase();
+          if (usedNames.has(normalizedName)) {
+            continue;
+          }
+          selected.push(species);
+          usedNames.add(normalizedName);
+          if (selected.length >= targetCount) {
+            break;
+          }
+        }
+      }
+      return selected;
+    };
+    const stageOne = pickStage(StarterStageOneDefaultNames, 5);
+    const stageTwo = pickStage(StarterStageTwoDefaultNames, 5);
+    const stageThree = pickStage(StarterStageThreeDefaultNames, 5);
+    return { stageOne, stageTwo, stageThree };
+  }, [speciesQuery.data, starterChoicesQuery.data]);
   const starterStageFlow: Array<{
     stageKey: "stageOne" | "stageTwo" | "stageThree";
     title: string;
@@ -1104,11 +1154,14 @@ export default function PokemonPage() {
               </div>
             </div>
             <div className="grid gap-4">
-              {starterChoicesQuery.isLoading ? (
+              {starterChoicesQuery.isLoading && starterChoices.stageOne.length === 0 && starterChoices.stageTwo.length === 0 && starterChoices.stageThree.length === 0 ? (
                 <div className="grid min-h-[160px] place-items-center rounded-xl border border-slate-700/70 bg-slate-900/70 p-4 text-sm text-slate-300">
                   Carregando opcoes...
                 </div>
-              ) : starterChoicesQuery.isError ? (
+              ) : starterChoicesQuery.isError &&
+                starterChoices.stageOne.length === 0 &&
+                starterChoices.stageTwo.length === 0 &&
+                starterChoices.stageThree.length === 0 ? (
                 <div className="grid gap-3 rounded-xl border border-red-400/35 bg-red-500/10 p-4">
                   <small className="text-sm text-red-100">Nao foi possivel listar os pokemons iniciais agora.</small>
                   <button
