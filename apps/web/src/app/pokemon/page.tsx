@@ -619,6 +619,8 @@ export default function PokemonPage() {
     selectedStarterByStage.stageOne.length > 0 &&
     selectedStarterByStage.stageTwo.length > 0 &&
     selectedStarterByStage.stageThree.length > 0;
+  const hasStarterChoices =
+    starterChoices.stageOne.length > 0 || starterChoices.stageTwo.length > 0 || starterChoices.stageThree.length > 0;
   const hiddenKey = me ? `battleleague:hiddenDashboardChampionIds:${me.id}` : HiddenPoolFallbackKey;
 
   useEffect(() => {
@@ -1272,16 +1274,16 @@ export default function PokemonPage() {
               )}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2 sm:hidden">
-              {starterStep > 1 && !starterChoicesQuery.isLoading && !starterChoicesQuery.isError ? (
+              {starterStep > 1 && hasStarterChoices ? (
                 <button type="button" className={PrimaryButtonClass} onClick={() => setStarterStep((starterStep - 1) as 1 | 2 | 3)}>
                   Voltar
                 </button>
               ) : null}
-              {starterStep < 3 && !starterChoicesQuery.isLoading && !starterChoicesQuery.isError ? (
+              {starterStep < 3 && hasStarterChoices ? (
                 <button
                   type="button"
                   className={PrimaryButtonClass}
-                  disabled={!canAdvanceStarterStep || starterChoicesQuery.isLoading || starterChoicesQuery.isError}
+                  disabled={!canAdvanceStarterStep || !hasStarterChoices}
                   onClick={() => setStarterStep((starterStep + 1) as 1 | 2 | 3)}
                 >
                   Continuar
@@ -1291,11 +1293,21 @@ export default function PokemonPage() {
                   type="button"
                   className={`${PrimaryButtonClass} h-11`}
                   onClick={HandleStarterBundleClaim}
-                  disabled={!canConfirmStarterBundle || claimStarterBundleMutation.isPending || starterChoicesQuery.isLoading || starterChoicesQuery.isError}
+                  disabled={!canConfirmStarterBundle || claimStarterBundleMutation.isPending || !hasStarterChoices}
                 >
                   {claimStarterBundleMutation.isPending ? "Confirmando time..." : "Confirmar time inicial"}
                 </button>
               )}
+            </div>
+            <div className="hidden items-center justify-end gap-2 sm:flex">
+              <button
+                type="button"
+                className={`${PrimaryButtonClass} h-11`}
+                onClick={HandleStarterBundleClaim}
+                disabled={!canConfirmStarterBundle || claimStarterBundleMutation.isPending || !hasStarterChoices}
+              >
+                {claimStarterBundleMutation.isPending ? "Confirmando time..." : "Confirmar time inicial"}
+              </button>
             </div>
           </div>
         </div>
