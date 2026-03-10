@@ -15,3 +15,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 apps/api/prisma/dev.db
+battleleague-key.pem
+nul
+**/nul
