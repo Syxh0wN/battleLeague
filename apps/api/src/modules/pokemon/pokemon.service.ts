@@ -2,10 +2,27 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { ClaimPokemonDto } from "./dto/claim-pokemon.dto";
+import { ClaimStarterBundleDto } from "./dto/claim-starter-bundle.dto";
+
+type StarterChoiceItem = {
+  id: string;
+  name: string;
+  typePrimary: string;
+  imageUrl: string | null;
+};
+
+const StarterChoicesByStage = {
+  stageOne: ["bulbasaur", "charmander", "squirtle", "abra", "gastly"],
+  stageTwo: ["bayleef", "quilava", "croconaw", "grovyle", "combusken"],
+  stageThree: ["dragonite", "tyranitar", "metagross", "salamence", "garchomp"]
+} as const;
+
+type StarterStageKey = keyof typeof StarterChoicesByStage;
 
 @Injectable()
 export class PokemonService {
   private readonly maxPokemonLevel = 100;
+  private readonly starterChoicesByStage = this.buildStarterChoicesByStage();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -17,6 +34,14 @@ export class PokemonService {
       orderBy: { pokeApiId: "asc" },
       take: 1025
     });
+  }
+
+  async getStarterChoices() {
+    try {
+      return await this.loadStarterChoicesByStage(this.starterChoicesByStage);
+    } catch {
+      return this.loadStarterChoicesByStage(StarterChoicesByStage);
+    }
   }
 
   async listMyPokemons(userId: string) {
@@ -97,6 +122,84 @@ export class PokemonService {
       entityId: createdPokemon.id
     });
     return createdPokemon;
+  }
+
+  async claimStarterBundle(userId: string, dto: ClaimStarterBundleDto) {
+    const starterChoices = await this.getStarterChoices();
+    const normalizedStageOne = dto.stageOneSpeciesName.trim().toLowerCase();
+    const normalizedStageTwo = dto.stageTwoSpeciesName.trim().toLowerCase();
+    const normalizedStageThree = dto.stageThreeSpeciesName.trim().toLowerCase();
+    if (new Set([normalizedStageOne, normalizedStageTwo, normalizedStageThree]).size !== 3) {
+      throw new BadRequestException("starterChoicesMustBeDistinct");
+    }
+    const stageOneAllowed = new Set(starterChoices.stageOne.map((species) => species.name.trim().toLowerCase()));
+    const stageTwoAllowed = new Set(starterChoices.stageTwo.map((species) => species.name.trim().toLowerCase()));
+    const stageThreeAllowed = new Set(starterChoices.stageThree.map((species) => species.name.trim().toLowerCase()));
+    if (!stageOneAllowed.has(normalizedStageOne) || !stageTwoAllowed.has(normalizedStageTwo) || !stageThreeAllowed.has(normalizedStageThree)) {
+      throw new BadRequestException("starterChoiceInvalid");
+    }
+    const selectedSpeciesNames = [normalizedStageOne, normalizedStageTwo, normalizedStageThree];
+    const selectedSpecies = await this.prisma.pokemonSpecies.findMany({
+      where: {
+        name: {
+          in: selectedSpeciesNames
+        }
+      }
+    });
+    if (selectedSpecies.length !== 3) {
+      throw new NotFoundException("speciesNotFound");
+    }
+    const selectedSpeciesByName = new Map(selectedSpecies.map((species) => [species.name.trim().toLowerCase(), species]));
+    const orderedSpecies = selectedSpeciesNames.map((name) => selectedSpeciesByName.get(name)).filter((species) => !!species);
+    if (orderedSpecies.length !== 3) {
+      throw new NotFoundException("speciesNotFound");
+    }
+    const createdPokemons = await this.prisma.$transaction(async (tx) => {
+      const userPokemonCount = await tx.userPokemon.count({ where: { userId } });
+      if (userPokemonCount > 0) {
+        throw new BadRequestException("starterAlreadyClaimed");
+      }
+      const created = [];
+      for (const species of orderedSpecies) {
+        if (!species) {
+          continue;
+        }
+        const starterStats = this.getStatsForLevel(
+          {
+            baseHp: species.baseHp,
+            baseAtk: species.baseAtk,
+            baseDef: species.baseDef,
+            baseSpeed: species.baseSpeed
+          },
+          1
+        );
+        const createdPokemon = await tx.userPokemon.create({
+          data: {
+            userId,
+            speciesId: species.id,
+            currentHp: starterStats.currentHp,
+            atk: starterStats.atk,
+            def: starterStats.def,
+            speed: starterStats.speed
+          },
+          include: { species: true }
+        });
+        created.push(createdPokemon);
+      }
+      return created;
+    });
+    await this.auditService.write({
+      actorUserId: userId,
+      action: "StarterBundleClaimed",
+      entityName: "UserPokemon",
+      payload: {
+        speciesNames: createdPokemons.map((pokemon) => pokemon.species.name)
+      }
+    });
+    return {
+      claimedCount: createdPokemons.length,
+      pokemons: createdPokemons
+    };
   }
 
   async evolvePokemon(userId: string, userPokemonId: string) {
@@ -299,4 +402,155 @@ export class PokemonService {
     const totalMs = (baseHours + stageHours) * 60 * 60 * 1000 + levelMinutes * 60 * 1000;
     return new Date(Date.now() + totalMs);
   }
+
+  private buildStarterChoicesByStage() {
+    const configuredChoices = {
+      stageOne: this.resolveStarterStageChoices("stageOne", process.env.STARTER_STAGE_ONE_CHOICES),
+      stageTwo: this.resolveStarterStageChoices("stageTwo", process.env.STARTER_STAGE_TWO_CHOICES),
+      stageThree: this.resolveStarterStageChoices("stageThree", process.env.STARTER_STAGE_THREE_CHOICES)
+    };
+    const combinedConfiguredNames = [
+      ...configuredChoices.stageOne,
+      ...configuredChoices.stageTwo,
+      ...configuredChoices.stageThree
+    ];
+    if (this.hasDuplicateNames(combinedConfiguredNames)) {
+      return {
+        stageOne: [...StarterChoicesByStage.stageOne],
+        stageTwo: [...StarterChoicesByStage.stageTwo],
+        stageThree: [...StarterChoicesByStage.stageThree]
+      };
+    }
+    return configuredChoices;
+  }
+
+  private resolveStarterStageChoices(stage: StarterStageKey, rawValue?: string) {
+    const fallback = [...StarterChoicesByStage[stage]];
+    if (!rawValue || rawValue.trim().length === 0) {
+      return fallback;
+    }
+    const parsed = rawValue
+      .split(",")
+      .map((name) => name.trim().toLowerCase())
+      .filter((name) => name.length > 0);
+    const deduped = Array.from(new Set(parsed));
+    if (deduped.length !== 5) {
+      return fallback;
+    }
+    return deduped;
+  }
+
+  private hasDuplicateNames(names: string[]) {
+    return new Set(names).size !== names.length;
+  }
+
+  private async loadStarterChoicesByStage(choicesByStage: {
+    stageOne: readonly string[];
+    stageTwo: readonly string[];
+    stageThree: readonly string[];
+  }) {
+    const requestedNames = [...choicesByStage.stageOne, ...choicesByStage.stageTwo, ...choicesByStage.stageThree];
+    const selectedSpecies = await this.prisma.pokemonSpecies.findMany({
+      where: {
+        name: {
+          in: requestedNames
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        typePrimary: true,
+        imageUrl: true
+      }
+    });
+    if (selectedSpecies.length !== requestedNames.length) {
+      throw new NotFoundException("starterChoicesNotAvailable");
+    }
+    const speciesEvolutionCatalog = await this.prisma.pokemonSpecies.findMany({
+      select: {
+        name: true,
+        evolutionTarget: true
+      }
+    });
+    if (this.hasEvolutionFamilyConflict(requestedNames, speciesEvolutionCatalog)) {
+      throw new BadRequestException("starterEvolutionFamilyConflict");
+    }
+    const selectedSpeciesByName = new Map(selectedSpecies.map((species) => [species.name.trim().toLowerCase(), species]));
+    const buildStageChoices = (stageNames: readonly string[]) =>
+      stageNames
+        .map((name) => selectedSpeciesByName.get(name))
+        .filter((species): species is StarterChoiceItem => !!species)
+        .slice(0, 5);
+    const stageOneChoices = buildStageChoices(choicesByStage.stageOne);
+    const stageTwoChoices = buildStageChoices(choicesByStage.stageTwo);
+    const stageThreeChoices = buildStageChoices(choicesByStage.stageThree);
+    if (stageOneChoices.length !== 5 || stageTwoChoices.length !== 5 || stageThreeChoices.length !== 5) {
+      throw new NotFoundException("starterChoicesNotAvailable");
+    }
+    return {
+      stageOne: stageOneChoices,
+      stageTwo: stageTwoChoices,
+      stageThree: stageThreeChoices
+    };
+  }
+
+  private hasEvolutionFamilyConflict(
+    selectedNames: string[],
+    speciesCatalog: Array<{
+      name: string;
+      evolutionTarget: string | null;
+    }>
+  ) {
+    const graph = new Map<string, Set<string>>();
+    const connect = (leftName: string, rightName: string) => {
+      if (!graph.has(leftName)) {
+        graph.set(leftName, new Set());
+      }
+      if (!graph.has(rightName)) {
+        graph.set(rightName, new Set());
+      }
+      graph.get(leftName)?.add(rightName);
+      graph.get(rightName)?.add(leftName);
+    };
+    for (const species of speciesCatalog) {
+      const sourceName = species.name.trim().toLowerCase();
+      if (!graph.has(sourceName)) {
+        graph.set(sourceName, new Set());
+      }
+      if (!species.evolutionTarget) {
+        continue;
+      }
+      const targetName = species.evolutionTarget.trim().toLowerCase();
+      if (targetName.length === 0) {
+        continue;
+      }
+      connect(sourceName, targetName);
+    }
+    const familyIdByName = new Map<string, string>();
+    for (const rootName of graph.keys()) {
+      if (familyIdByName.has(rootName)) {
+        continue;
+      }
+      const queue = [rootName];
+      familyIdByName.set(rootName, rootName);
+      while (queue.length > 0) {
+        const currentName = queue.shift();
+        if (!currentName) {
+          continue;
+        }
+        for (const neighborName of graph.get(currentName) ?? []) {
+          if (familyIdByName.has(neighborName)) {
+            continue;
+          }
+          familyIdByName.set(neighborName, rootName);
+          queue.push(neighborName);
+        }
+      }
+    }
+    const selectedFamilyIds = selectedNames
+      .map((name) => name.trim().toLowerCase())
+      .map((name) => familyIdByName.get(name) ?? name);
+    return this.hasDuplicateNames(selectedFamilyIds);
+  }
+
 }

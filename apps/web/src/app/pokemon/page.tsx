@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ApiFetch } from "../../lib/api";
 import { GetTrainerPossessive } from "../../lib/trainer-gender";
 import { useToast } from "../../providers/toast-provider";
@@ -46,6 +47,12 @@ type Species = {
   name: string;
   typePrimary: string;
   imageUrl: string | null;
+};
+
+type StarterChoicesResponse = {
+  stageOne: Species[];
+  stageTwo: Species[];
+  stageThree: Species[];
 };
 
 type MeSummary = {
@@ -111,6 +118,7 @@ const PoolChangedEvent = "battleleague:poolChanged";
 const TeamFeedBatchSize = 12;
 
 export default function PokemonPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [nowMs, setNowMs] = useState(Date.now());
@@ -127,6 +135,16 @@ export default function PokemonPage() {
   const [lootRouletteError, setLootRouletteError] = useState("");
   const [selectedLootBoxType, setSelectedLootBoxType] = useState("fiesta");
   const [visibleTeamCount, setVisibleTeamCount] = useState(TeamFeedBatchSize);
+  const [selectedStarterByStage, setSelectedStarterByStage] = useState<{
+    stageOne: string;
+    stageTwo: string;
+    stageThree: string;
+  }>({
+    stageOne: "",
+    stageTwo: "",
+    stageThree: ""
+  });
+  const [isStarterRewardModalOpen, setIsStarterRewardModalOpen] = useState(false);
   const teamLoadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const lootRouletteIntervalRef = useRef<number | null>(null);
   const myPokemonsQuery = useQuery({
@@ -136,6 +154,10 @@ export default function PokemonPage() {
   const speciesQuery = useQuery({
     queryKey: ["species"],
     queryFn: () => ApiFetch<Species[]>("/pokemon/species")
+  });
+  const starterChoicesQuery = useQuery({
+    queryKey: ["starterChoices"],
+    queryFn: () => ApiFetch<StarterChoicesResponse>("/pokemon/starterChoices")
   });
   const meQuery = useQuery({
     queryKey: ["meForPokemonTraining"],
@@ -400,17 +422,18 @@ export default function PokemonPage() {
     }
   };
 
-  const claimMutation = useMutation({
-    mutationFn: (speciesName: string) =>
-      ApiFetch("/pokemon/claimStarter", {
+  const claimStarterBundleMutation = useMutation({
+    mutationFn: (payload: { stageOneSpeciesName: string; stageTwoSpeciesName: string; stageThreeSpeciesName: string }) =>
+      ApiFetch("/pokemon/claimStarterBundle", {
         method: "POST",
-        body: JSON.stringify({ speciesName })
+        body: JSON.stringify(payload)
       }),
     onSuccess: () => {
       setPokemonActionError("");
+      setIsStarterRewardModalOpen(true);
       addToast({
-        title: "Starter escolhido",
-        message: "Seu pokemon foi adicionado ao time.",
+        title: "Time inicial confirmado",
+        message: "Seus 3 pokemons iniciais foram adicionados.",
         tone: "success"
       });
       void queryClient.invalidateQueries({ queryKey: ["myPokemons"] });
@@ -526,7 +549,11 @@ export default function PokemonPage() {
     [dashboardChampionsQuery.data]
   );
   const myTrainingPoints = meQuery.data?.trainingPoints ?? 0;
-  const starters = (speciesQuery.data ?? []).slice(0, 3);
+  const starterChoices = starterChoicesQuery.data ?? { stageOne: [], stageTwo: [], stageThree: [] };
+  const canConfirmStarterBundle =
+    selectedStarterByStage.stageOne.length > 0 &&
+    selectedStarterByStage.stageTwo.length > 0 &&
+    selectedStarterByStage.stageThree.length > 0;
   const hiddenKey = me ? `battleleague:hiddenDashboardChampionIds:${me.id}` : HiddenPoolFallbackKey;
 
   useEffect(() => {
@@ -722,6 +749,22 @@ export default function PokemonPage() {
     }
     return "";
   };
+  const HandleStarterPick = (stageKey: "stageOne" | "stageTwo" | "stageThree", speciesName: string) => {
+    setSelectedStarterByStage((current) => ({
+      ...current,
+      [stageKey]: speciesName
+    }));
+  };
+  const HandleStarterBundleClaim = () => {
+    if (!canConfirmStarterBundle || claimStarterBundleMutation.isPending) {
+      return;
+    }
+    claimStarterBundleMutation.mutate({
+      stageOneSpeciesName: selectedStarterByStage.stageOne,
+      stageTwoSpeciesName: selectedStarterByStage.stageTwo,
+      stageThreeSpeciesName: selectedStarterByStage.stageThree
+    });
+  };
 
   return (
     <main className="min-h-screen content-start grid gap-1 p-3 sm:p-4 lg:p-6">
@@ -816,9 +859,9 @@ export default function PokemonPage() {
               const trainingCooldownActive = !trainIsReady;
               const hasProgressCooldown = evolveCooldownActive || trainingCooldownActive;
               const canTrainNow = !pokemon.isLegacy && !isInPool && trainIsReady && myTrainingPoints > 0;
-              const isEvolveButtonDisabled = !canEvolveNow || evolvingPokemonId === pokemon.id || claimMutation.isPending || trainMutation.isPending;
+              const isEvolveButtonDisabled = !canEvolveNow || evolvingPokemonId === pokemon.id || trainMutation.isPending;
               const isTrainButtonDisabled =
-                !canTrainNow || evolvingPokemonId === `train:${pokemon.id}` || claimMutation.isPending || evolveMutation.isPending;
+                !canTrainNow || evolvingPokemonId === `train:${pokemon.id}` || evolveMutation.isPending;
               const evolutionBlockReason = getEvolutionBlockReason(pokemon, evolveIsReady, isInPool);
               const trainingBlockReason = getTrainingBlockReason(pokemon, trainIsReady, isInPool);
               return (
@@ -997,34 +1040,80 @@ export default function PokemonPage() {
             <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-slate-800 text-xs font-bold text-slate-300 ring-1 ring-inset ring-slate-600/70">PK</div>
             <div className="grid gap-1">
               <strong>Seu time ainda esta vazio</strong>
-              <p className="text-sm text-slate-300">Escolha um starter agora para liberar duelos, ganhar XP e iniciar a jornada no ranking {trainerPossessive}.</p>
+              <p className="text-sm text-slate-300">Escolha 1 pokemon de cada estagio para montar seu time inicial e iniciar sua jornada no ranking {trainerPossessive}.</p>
             </div>
           </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            {starters.map((species) => (
-              <article key={species.id} className="grid gap-3 rounded-xl bg-slate-900/70 p-3 ring-1 ring-inset ring-slate-700/70">
-                <div className="relative grid h-24 place-items-center overflow-hidden rounded-xl bg-slate-800/70">
-                  <span className="absolute right-2 top-2 rounded-full bg-slate-900/85 px-2 py-0.5 text-xs font-semibold capitalize text-slate-100 ring-1 ring-inset ring-slate-600/70">
-                    {species.typePrimary}
-                  </span>
-                  {species.imageUrl ? (
-                    <img loading="lazy" decoding="async" src={species.imageUrl} alt={species.name} className="h-16 w-16 object-contain sm:h-20 sm:w-20" />
-                  ) : (
-                    <div className="text-xs font-bold text-slate-400">PK</div>
-                  )}
+          <div className="grid gap-4">
+            {[
+              { stageKey: "stageOne", title: "Evolucao minima", choices: starterChoices.stageOne },
+              { stageKey: "stageTwo", title: "Evolucao 2", choices: starterChoices.stageTwo },
+              { stageKey: "stageThree", title: "Evolucao maxima", choices: starterChoices.stageThree }
+            ].map((stage) => (
+              <section key={stage.stageKey} className="grid gap-3 rounded-xl bg-slate-900/60 p-3 ring-1 ring-inset ring-slate-700/70">
+                <div className="flex items-center justify-between gap-2">
+                  <strong>{stage.title}</strong>
+                  <small className="text-slate-300">Escolha 1 entre 5 opcoes</small>
                 </div>
-                <div className="grid gap-1">
-                  <strong className="capitalize">{species.name}</strong>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {stage.choices.map((species) => {
+                    const isSelected =
+                      selectedStarterByStage[stage.stageKey as "stageOne" | "stageTwo" | "stageThree"].trim().toLowerCase() ===
+                      species.name.trim().toLowerCase();
+                    return (
+                      <button
+                        key={species.id}
+                        type="button"
+                        className={`grid gap-3 rounded-xl p-3 text-left ring-1 ring-inset transition ${
+                          isSelected
+                            ? "bg-emerald-900/40 ring-emerald-400/70"
+                            : "bg-slate-900/70 ring-slate-700/70 hover:bg-slate-800/80 hover:ring-slate-500/70"
+                        }`}
+                        onClick={() => HandleStarterPick(stage.stageKey as "stageOne" | "stageTwo" | "stageThree", species.name)}
+                      >
+                        <div className="relative grid h-24 place-items-center overflow-hidden rounded-xl bg-slate-800/70">
+                          <span className="absolute right-2 top-2 rounded-full bg-slate-900/85 px-2 py-0.5 text-xs font-semibold capitalize text-slate-100 ring-1 ring-inset ring-slate-600/70">
+                            {species.typePrimary}
+                          </span>
+                          {species.imageUrl ? (
+                            <img loading="lazy" decoding="async" src={species.imageUrl} alt={species.name} className="h-16 w-16 object-contain sm:h-20 sm:w-20" />
+                          ) : (
+                            <div className="text-xs font-bold text-slate-400">PK</div>
+                          )}
+                        </div>
+                        <div className="grid gap-1">
+                          <strong className="capitalize">{species.name}</strong>
+                          {isSelected ? <small className="text-emerald-300">Selecionado</small> : null}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-                <button className={PrimaryButtonClass} onClick={() => claimMutation.mutate(species.name)}>
-                  Escolher {species.name}
-                </button>
-              </article>
+              </section>
             ))}
+            <button type="button" className={PrimaryButtonClass} onClick={HandleStarterBundleClaim} disabled={!canConfirmStarterBundle || claimStarterBundleMutation.isPending}>
+              {claimStarterBundleMutation.isPending ? "Confirmando time..." : "Confirmar time inicial"}
+            </button>
           </div>
         </section>
       )}
+      {isStarterRewardModalOpen ? (
+        <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/70 p-4">
+          <div className="grid w-full max-w-md gap-4 rounded-2xl bg-slate-900 p-5 ring-1 ring-inset ring-slate-700/80">
+            <h3 className="text-xl font-semibold text-slate-100">Parabens, Treinador</h3>
+            <p className="text-sm text-slate-300">Voce ganhou 1000 coins para gastar com caixas.</p>
+            <button
+              type="button"
+              className={PrimaryButtonClass}
+              onClick={() => {
+                setIsStarterRewardModalOpen(false);
+                router.push("/boxes");
+              }}
+            >
+              Confirmar e ir para Caixas
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

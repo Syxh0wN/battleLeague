@@ -62,6 +62,11 @@ export function GoogleLoginButton() {
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
+  const GetGoogleButtonWidth = (buttonElement: HTMLElement) => {
+    const containerWidth = buttonElement.parentElement?.clientWidth ?? buttonElement.clientWidth ?? 320;
+    return Math.max(220, Math.min(380, containerWidth - 4));
+  };
+
   const LoginWithGoogleCredential = async (idToken: string) => {
     const apiUrl = ResolveApiUrl();
     const response = await fetch(`${apiUrl}/auth/google`, {
@@ -120,12 +125,13 @@ export function GoogleLoginButton() {
           });
       }
     });
+    const buttonWidth = GetGoogleButtonWidth(buttonElement);
     window.google.accounts.id.renderButton(buttonElement, {
       theme: "outline",
       size: "large",
       shape: "pill",
       text: "continue_with",
-      width: 320
+      width: buttonWidth
     });
     setIsGoogleRendered(true);
   };
@@ -208,8 +214,8 @@ export function GoogleLoginButton() {
   }, [router]);
 
   return (
-    <div className="grid gap-4">
-      <div id="GoogleSignInButton" className="min-h-[44px]" />
+    <div className="grid w-full gap-4">
+      <div id="GoogleSignInButton" className="grid min-h-[44px] w-full place-items-center" />
       {isSubmitting ? <small className="text-slate-400">Entrando com Google...</small> : null}
       {isCheckingSession ? <small className="text-slate-400">Verificando sessao...</small> : null}
       {error ? <small className="text-red-400">{error}</small> : null}

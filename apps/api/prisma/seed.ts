@@ -27,6 +27,10 @@ type DemoPlayerSeed = {
   losses: number;
 };
 
+const DemoLevels = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 25, 27, 30, 35, 40] as const;
+const MinDemoAccountsPerLevel = 30;
+const MaxDemoAccountsPerLevel = 70;
+
 function GetRarityByPokeApiId(pokeApiId: number) {
   if (pokeApiId >= 821) return "legendary";
   if (pokeApiId >= 616) return "epic";
@@ -58,48 +62,42 @@ const speciesCatalogSeed: SpeciesSeed[] = [
   { pokeApiId: 150, name: "mewtwo", typePrimary: "psychic", typeSecondary: null, baseHp: 106, baseAtk: 110, baseDef: 90, baseSpeed: 130, evolutionTarget: null, evolutionLevel: null, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png" }
 ];
 
+function Clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function BuildMmrRangeByLevel(level: number) {
+  const normalizedLevel = Clamp(level, 2, 40);
+  const progress = (normalizedLevel - 2) / (40 - 2);
+  const minMmr = Math.floor(650 + progress * 2350);
+  const maxMmr = Math.floor(minMmr + 220 + progress * 280);
+  return {
+    minMmr,
+    maxMmr
+  };
+}
+
+function BuildAccountsCountForLevel(level: number) {
+  const span = MaxDemoAccountsPerLevel - MinDemoAccountsPerLevel + 1;
+  return MinDemoAccountsPerLevel + ((level * 17 + 11) % span);
+}
+
 function buildDemoPlayers(): DemoPlayerSeed[] {
-  const rankDivisions = [
-    { league: "Ferro", division: 3, minMmr: 550, maxMmr: 699 },
-    { league: "Ferro", division: 2, minMmr: 700, maxMmr: 799 },
-    { league: "Ferro", division: 1, minMmr: 800, maxMmr: 899 },
-    { league: "Bronze", division: 3, minMmr: 900, maxMmr: 999 },
-    { league: "Bronze", division: 2, minMmr: 1000, maxMmr: 1099 },
-    { league: "Bronze", division: 1, minMmr: 1100, maxMmr: 1199 },
-    { league: "Prata", division: 3, minMmr: 1200, maxMmr: 1299 },
-    { league: "Prata", division: 2, minMmr: 1300, maxMmr: 1399 },
-    { league: "Prata", division: 1, minMmr: 1400, maxMmr: 1499 },
-    { league: "Ouro", division: 3, minMmr: 1500, maxMmr: 1599 },
-    { league: "Ouro", division: 2, minMmr: 1600, maxMmr: 1699 },
-    { league: "Ouro", division: 1, minMmr: 1700, maxMmr: 1799 },
-    { league: "Platina", division: 3, minMmr: 1800, maxMmr: 1899 },
-    { league: "Platina", division: 2, minMmr: 1900, maxMmr: 1999 },
-    { league: "Platina", division: 1, minMmr: 2000, maxMmr: 2099 },
-    { league: "Diamante", division: 3, minMmr: 2100, maxMmr: 2199 },
-    { league: "Diamante", division: 2, minMmr: 2200, maxMmr: 2299 },
-    { league: "Diamante", division: 1, minMmr: 2300, maxMmr: 2399 },
-    { league: "Ruby", division: 3, minMmr: 2400, maxMmr: 2699 },
-    { league: "Ruby", division: 2, minMmr: 2700, maxMmr: 2999 },
-    { league: "Ruby", division: 1, minMmr: 3000, maxMmr: 3300 }
-  ] as const;
-  const totalPlayers = 1000;
-  const playersPerDivision = Math.floor(totalPlayers / rankDivisions.length);
-  const remainderPlayers = totalPlayers % rankDivisions.length;
   const demoPlayers: DemoPlayerSeed[] = [];
   let playerCounter = 1;
 
-  for (let divisionIndex = 0; divisionIndex < rankDivisions.length; divisionIndex += 1) {
-    const division = rankDivisions[divisionIndex];
-    const playersInThisDivision = playersPerDivision + (divisionIndex < remainderPlayers ? 1 : 0);
-    for (let localIndex = 0; localIndex < playersInThisDivision; localIndex += 1) {
-      const playerTag = playerCounter.toString().padStart(4, "0");
-      const level = 2 + ((playerCounter - 1) % 9);
-      const wins = 6 + ((playerCounter * 7) % 38);
-      const losses = 4 + ((playerCounter * 5) % 30);
-      const span = Math.max(1, division.maxMmr - division.minMmr);
-      const mmr = division.minMmr + ((playerCounter * 13) % span);
-      const displayName = `Rival ${division.league} ${division.division} ${playerTag}`;
-      const slug = `demo_${division.league.toLowerCase()}_${division.division}_${playerTag}`;
+  for (let levelIndex = 0; levelIndex < DemoLevels.length; levelIndex += 1) {
+    const level = DemoLevels[levelIndex];
+    const accountsCount = BuildAccountsCountForLevel(level);
+    const mmrRange = BuildMmrRangeByLevel(level);
+    for (let localIndex = 0; localIndex < accountsCount; localIndex += 1) {
+      const playerTag = playerCounter.toString().padStart(5, "0");
+      const wins = Math.max(5, Math.floor(level * 1.5) + ((localIndex * 7 + level) % 42));
+      const losses = Math.max(3, Math.floor(level * 0.9) + ((localIndex * 5 + level) % 27));
+      const mmrSpan = Math.max(1, mmrRange.maxMmr - mmrRange.minMmr);
+      const mmr = mmrRange.minMmr + ((localIndex * 23 + level * 11) % mmrSpan);
+      const displayName = `Rival Lv${String(level).padStart(2, "0")} ${playerTag}`;
+      const slug = `demo_lv_${String(level).padStart(2, "0")}_${playerTag}`;
       demoPlayers.push({
         googleSub: slug,
         email: `${slug}@battleleague.local`,
@@ -135,13 +133,19 @@ async function ensureSpeciesCatalog() {
 }
 
 async function ensureDemoOpponents() {
-  const speciesCatalog = await prisma.pokemonSpecies.findMany({
-    orderBy: { pokeApiId: "asc" },
-    take: 30
-  });
+  const speciesCatalog = await prisma.pokemonSpecies.findMany();
   if (speciesCatalog.length === 0) {
     return;
   }
+
+  const sortedSpeciesByPower = [...speciesCatalog].sort((left, right) => {
+    const leftPower = left.baseHp + left.baseAtk + left.baseDef + left.baseSpeed;
+    const rightPower = right.baseHp + right.baseAtk + right.baseDef + right.baseSpeed;
+    if (rightPower !== leftPower) {
+      return rightPower - leftPower;
+    }
+    return left.pokeApiId - right.pokeApiId;
+  });
 
   const demoPlayers = buildDemoPlayers();
   for (let index = 0; index < demoPlayers.length; index += 1) {
@@ -180,16 +184,24 @@ async function ensureDemoOpponents() {
       select: { speciesId: true }
     });
     const existingSpeciesIds = new Set(existingPokemons.map((pokemon) => pokemon.speciesId));
-    const desiredPokemonCount = 2 + (index % 9);
+    const desiredPokemonCount = Clamp(2 + Math.floor((demo.level - 2) / 8), 2, 6);
     const missingPokemonCount = Math.max(0, desiredPokemonCount - existingPokemons.length);
     if (missingPokemonCount === 0) {
       continue;
     }
 
+    const levelProgress = (Clamp(demo.level, 2, 40) - 2) / (40 - 2);
+    const centerIndex = Math.floor(levelProgress * (sortedSpeciesByPower.length - 1));
+    const rangeRadius = Math.max(6, Math.floor(sortedSpeciesByPower.length * 0.18));
+    const startIndex = Clamp(centerIndex - rangeRadius, 0, sortedSpeciesByPower.length - 1);
+    const endIndex = Clamp(centerIndex + rangeRadius, 0, sortedSpeciesByPower.length - 1);
+    const speciesWindow = sortedSpeciesByPower.slice(startIndex, endIndex + 1);
+    const fallbackWindow = speciesWindow.length > 0 ? speciesWindow : sortedSpeciesByPower;
+
     const chosenSpecies: typeof speciesCatalog = [];
     let speciesCursor = 0;
-    while (chosenSpecies.length < missingPokemonCount && speciesCursor < speciesCatalog.length * 2) {
-      const species = speciesCatalog[(index * 3 + speciesCursor) % speciesCatalog.length];
+    while (chosenSpecies.length < missingPokemonCount && speciesCursor < fallbackWindow.length * 3) {
+      const species = fallbackWindow[(index * 5 + speciesCursor * 3 + demo.level) % fallbackWindow.length];
       if (!existingSpeciesIds.has(species.id) && !chosenSpecies.some((item) => item.id === species.id)) {
         chosenSpecies.push(species);
       }
@@ -198,8 +210,8 @@ async function ensureDemoOpponents() {
 
     for (let speciesIndex = 0; speciesIndex < chosenSpecies.length; speciesIndex += 1) {
       const species = chosenSpecies[speciesIndex];
-      const pokemonLevel = 2 + ((index + speciesIndex) % 9);
-      const statBonus = pokemonLevel + speciesIndex;
+      const pokemonLevel = Clamp(demo.level + ((speciesIndex % 3) - 1), 2, 45);
+      const statBonus = pokemonLevel + Math.floor(speciesIndex / 2);
       await prisma.userPokemon.create({
         data: {
           userId: user.id,

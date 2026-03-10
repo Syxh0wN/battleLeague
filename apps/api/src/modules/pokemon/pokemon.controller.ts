@@ -3,6 +3,7 @@ import { CurrentUser } from "../../common/auth-user.decorator";
 import { AuthUser } from "../../common/auth-user.type";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { ClaimPokemonDto } from "./dto/claim-pokemon.dto";
+import { ClaimStarterBundleDto } from "./dto/claim-starter-bundle.dto";
 import { PokemonService } from "./pokemon.service";
 
 @Controller("pokemon")
@@ -15,6 +16,11 @@ export class PokemonController {
     return this.pokemonService.listSpecies();
   }
 
+  @Get("starterChoices")
+  async getStarterChoices() {
+    return this.pokemonService.getStarterChoices();
+  }
+
   @Get("my")
   async listMine(@CurrentUser() user: AuthUser) {
     return this.pokemonService.listMyPokemons(user.userId);
@@ -23,6 +29,11 @@ export class PokemonController {
   @Post("claimStarter")
   async claimStarter(@CurrentUser() user: AuthUser, @Body() dto: ClaimPokemonDto) {
     return this.pokemonService.claimStarter(user.userId, dto);
+  }
+
+  @Post("claimStarterBundle")
+  async claimStarterBundle(@CurrentUser() user: AuthUser, @Body() dto: ClaimStarterBundleDto) {
+    return this.pokemonService.claimStarterBundle(user.userId, dto);
   }
 
   @Post("evolve/:userPokemonId")
