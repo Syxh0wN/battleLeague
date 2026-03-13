@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-const DefaultApiTarget = "http://localhost:3000/api";
+const DefaultApiTarget = "http://localhost:3000/battle";
 const AllowedProxyPrefixes = [
   "auth/google",
   "auth/local-auto",

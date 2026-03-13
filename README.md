@@ -102,16 +102,19 @@ Monorepo com workspaces:
 
 ## Rotas Principais Da API
 
-- `POST /api/auth/google`
-- `POST /api/auth/refresh`
-- `GET /api/users/me`
-- `PATCH /api/users/me/profile`
-- `GET /api/pokemon/species`
-- `POST /api/pokemon/claimStarter`
-- `POST /api/battles`
-- `POST /api/battles/:battleId/turn`
-- `POST /api/progression/lootbox/open`
-- `POST /api/social/friends/request`
+Todas as rotas usam o prefixo `/battle/`:
+
+- `POST /battle/auth/google`
+- `POST /battle/auth/refresh`
+- `GET /battle/users/me`
+- `PATCH /battle/users/me/profile`
+- `GET /battle/pokemon/species`
+- `POST /battle/pokemon/claimStarter`
+- `POST /battle/battles`
+- `POST /battle/battles/:battleId/turn`
+- `POST /battle/progression/lootbox/open`
+- `POST /battle/social/friends/request`
+- `GET /battle/health` - Health check endpoint
 
 ## Objetivo De Portfolio
 

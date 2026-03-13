@@ -5,7 +5,7 @@ function ResolveApiBaseUrl() {
   if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  return "http://localhost:3000/api";
+  return "http://localhost:3000/battle";
 }
 
 const ApiBaseUrl = ResolveApiBaseUrl();
