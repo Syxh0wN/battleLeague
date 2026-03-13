@@ -206,25 +206,32 @@ export class AuthService {
   }
 
   private async verifyGoogleToken(idToken: string): Promise<TokenPayload> {
-    const ticket = await this.googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
-    const payload = ticket.getPayload();
-    if (!payload) {
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+      const payload = ticket.getPayload();
+      if (!payload) {
+        throw new UnauthorizedException("invalidGoogleToken");
+      }
+      const validIssuers = ["accounts.google.com", "https://accounts.google.com"];
+      if (!payload.iss || !validIssuers.includes(payload.iss)) {
+        throw new UnauthorizedException("invalidGoogleIssuer");
+      }
+      if (!payload.exp || payload.exp * 1000 < Date.now()) {
+        throw new UnauthorizedException("expiredGoogleToken");
+      }
+      if (!payload.email_verified) {
+        throw new UnauthorizedException("unverifiedGoogleEmail");
+      }
+      return payload;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException("invalidGoogleToken");
     }
-    const validIssuers = ["accounts.google.com", "https://accounts.google.com"];
-    if (!payload.iss || !validIssuers.includes(payload.iss)) {
-      throw new UnauthorizedException("invalidGoogleIssuer");
-    }
-    if (!payload.exp || payload.exp * 1000 < Date.now()) {
-      throw new UnauthorizedException("expiredGoogleToken");
-    }
-    if (!payload.email_verified) {
-      throw new UnauthorizedException("unverifiedGoogleEmail");
-    }
-    return payload;
   }
 
   private normalizeAccountTag(value: string) {
